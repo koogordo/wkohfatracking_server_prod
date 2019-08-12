@@ -1,2 +1,3 @@
-# wkohfatracking_server_dev
-The development rep for the wko tracking server
+# wkohfatracking_server_prod
+
+the distriburtion code for the wko tracking server
