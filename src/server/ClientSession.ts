@@ -1,6 +1,6 @@
 import * as socketIo from "socket.io";
 import { WKODbAccess } from "../data/WKODbAccess";
-import { CommEvent, IWKOMessage, IWKORequest, IWKONotification } from "./WKOCommunication";
+import { CommEvent, IWKOMessage, IWKORequest, IWKONotification, IWKODashboardData } from "./WKOCommunication";
 import { WKOSocket } from "./WKOSocket";
 import { IVisit, IUser } from "../data/Repository";
 export class ClientSession {
@@ -8,6 +8,13 @@ export class ClientSession {
     private dao!: WKODbAccess;
     private dispatch!: WKOSocket;
     private sessionID!: string;
+    private dashData!: any;
+    get clientDashboardData() {
+        return this.dashData;
+    }
+    set clientDashboardData(data: IWKODashboardData) {
+        this.dashData = data;
+    }
     constructor(sessionID: string, socket: socketIo.Socket, dao: WKODbAccess, dispatch: WKOSocket) {
         this.socket = socket;
         this.dao = dao;
@@ -31,6 +38,9 @@ export class ClientSession {
             const wkoFormUpdate: IWKORequest = data as IWKORequest;
             this.handleRequest(wkoFormUpdate);
         });
+        this.socket.on(CommEvent.DASHBOARD_DATA_PASS, (data: IWKODashboardData) => {
+            this.clientDashboardData = data;
+        });
     }
 
     private handleMessage(data: IWKOMessage): void {
@@ -53,6 +63,9 @@ export class ClientSession {
             case "notify":
                 this.notifyRelevantUsers(data);
                 break;
+            case "get-dash-data":
+                console.log("server recieved data pass request");
+                this.passDashboardData(data);
             default: {
                 break;
             }
@@ -120,5 +133,10 @@ export class ClientSession {
                         }
                     });
             });
+    }
+
+    private passDashboardData(data: IWKORequest) {
+        console.log("server passing data back");
+        this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.clientDashboardData);
     }
 }

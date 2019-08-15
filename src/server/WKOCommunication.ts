@@ -4,6 +4,7 @@ export enum CommEvent {
     REQUEST = "form-request",
     NOTIFICATION = "change-notify",
     REQ_ERR = "request-error",
+    DASHBOARD_DATA_PASS = "dashboard-data-pass",
 }
 
 export interface IWKOMessage {
@@ -26,4 +27,10 @@ export interface IWKONotification {
     changedBy: string;
     timestamp: string;
     newStatus: string;
+}
+
+export interface IWKODashboardData {
+    data: any;
+    userType: string;
+    username: string;
 }
