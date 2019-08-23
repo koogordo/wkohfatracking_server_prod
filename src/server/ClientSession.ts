@@ -3,18 +3,19 @@ import { WKODbAccess } from "../data/WKODbAccess";
 import { CommEvent, IWKOMessage, IWKORequest, IWKONotification, IWKODashboardData } from "./WKOCommunication";
 import { WKOSocket } from "./WKOSocket";
 import { IVisit, IUser } from "../data/Repository";
+import { DashData } from "../data/DashData";
 export class ClientSession {
     private socket!: socketIo.Socket;
     private dao!: WKODbAccess;
     private dispatch!: WKOSocket;
     private sessionID!: string;
-    private dashData!: any;
-    get clientDashboardData() {
-        return this.dashData;
-    }
-    set clientDashboardData(data: IWKODashboardData) {
-        this.dashData = data;
-    }
+    private dashData!: DashData;
+    // get clientDashboardData() {
+    //     return this.dashData;
+    // }
+    // set clientDashboardData(data: IWKODashboardData) {
+    //     this.dashData = data;
+    // }
     constructor(sessionID: string, socket: socketIo.Socket, dao: WKODbAccess, dispatch: WKOSocket) {
         this.socket = socket;
         this.dao = dao;
@@ -39,7 +40,14 @@ export class ClientSession {
             this.handleRequest(wkoFormUpdate);
         });
         this.socket.on(CommEvent.DASHBOARD_DATA_PASS, (data: IWKODashboardData) => {
-            this.clientDashboardData = data;
+            console.log(data);
+            if (!this.dashData) {
+                this.dashData = new DashData(data.data, data.username, data.userType);
+                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+            } else {
+                this.dashData.setData(data.data);
+                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+            }
         });
     }
 
@@ -120,14 +128,14 @@ export class ClientSession {
                     })
                     .forEach((username: string) => {
                         const s = this.dispatch.findSession(username);
-                        s ? console.log("SOCKET TO NOTIFY FOUND: ", username) : console.log("SOCKET TO NOTIFY NOT FOUND", username);
                         const notification: IWKONotification = {
                             changedBy: data.reqUser,
                             newForm: data.visit,
                             newStatus: data.visit.form.status[data.visit.form.status.length - 1],
                             timestamp: Date.now().toString(),
                         };
-                        if (s && username !== data.reqUser) {
+                        this.dashData.mergeNotification(notification);
+                        if (s) {
                             const sock = s.getSocket();
                             sock.emit(CommEvent.NOTIFICATION, notification);
                         }
@@ -137,6 +145,10 @@ export class ClientSession {
 
     private passDashboardData(data: IWKORequest) {
         console.log("server passing data back");
-        this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.clientDashboardData);
+        if (this.dashData) {
+            this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+        } else {
+            this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, null);
+        }
     }
 }
