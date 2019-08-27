@@ -22,8 +22,8 @@ export class Repository<T> {
         });
     }
 
-    public findAll(): Promise<any> {
-        return this.dbo.allDocs({ include_docs: true });
+    public findAll(options: any): Promise<any> {
+        return this.dbo.allDocs(options);
     }
 
     public createAll(docs: T[]) {
@@ -32,6 +32,22 @@ export class Repository<T> {
 
     public deleteAll(docs: T[]): Promise<any> {
         return this.dbo.bulkDocs(docs);
+    }
+    public query(designView: string, options: any): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.dbo.query(designView, options, (err, payload)=> {
+                if (err) {
+                    reject(err)
+                }
+                if (payload) {
+                    resolve(payload);
+                }
+                else {
+                    throw new Error(`Error querying view ${designView} failed`);
+                }
+            })
+        })
+        //return this.dbo.query(designView, options);
     }
 }
 
@@ -55,3 +71,16 @@ export interface IUser {
     roles: string[];
     type: string;
 }
+export interface IOsClients {
+    _id: string;
+    _rev: string;
+    clients: any[];
+}
+export interface IReviewGroup {
+    _id: string;
+    _rev: string;
+    form: any;
+    reviewees: any;
+    reviewers: any;
+}
+

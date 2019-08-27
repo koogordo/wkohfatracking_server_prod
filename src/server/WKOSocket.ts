@@ -49,6 +49,7 @@ export class WKOSocket {
             }
             next(new Error("Authentication Error"));
         });
+
     }
     private registerClient(id: string, clientSession: ClientSession): void {
         if (!this.connections.has(id)) {

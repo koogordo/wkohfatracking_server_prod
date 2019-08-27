@@ -1,10 +1,12 @@
 import express from "express";
 import * as socketIo from "socket.io";
+import bodyParser from "body-parser";
 import { createServer, Server } from "http";
 import { WKOSocket } from "./WKOSocket";
 import { ClientSession } from "./ClientSession";
 import { IdbConfig } from "../data/Database";
 import cors from "cors";
+import DashboardController from "../api/dashboard/DashboardController";
 export class WKOServer {
     private server!: Server;
     private app!: express.Application;
@@ -15,6 +17,7 @@ export class WKOServer {
         this.configure(config);
         this.createApp();
         this.middleWare();
+        this.apiRouting();
         this.createServer();
     }
     public serverInstance() {
@@ -23,6 +26,7 @@ export class WKOServer {
     public attachSocket(socket: WKOSocket) {
         this.socketServer = socket;
     }
+    public attachApi() {}
 
     public start() {
         this.server.listen(this.config.port, () => {
@@ -41,6 +45,13 @@ export class WKOServer {
     private middleWare() {
         // this.app.use(cors());
         this.app.enable("trust proxy");
+
+        this.app.use(bodyParser.json());
+        this.app.use(bodyParser.urlencoded({ extended: true }));
+        this.app.use(cors());
+    }
+    private apiRouting() {
+        this.app.use("/api", DashboardController);
     }
 }
 

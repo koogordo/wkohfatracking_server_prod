@@ -79,7 +79,6 @@ export class ClientSession {
             }
         }
     }
-
     private doUpdate(req: IWKORequest) {
         this.dao
             .visits(req.userDB)
@@ -92,6 +91,7 @@ export class ClientSession {
             })
             .catch((err) => {
                 const s = this.dispatch.findSession(req.reqUser);
+                console.log("There was an update error")
                 if (s) {
                     s.getSocket().emit(CommEvent.REQ_ERR, err);
                 }
@@ -117,7 +117,7 @@ export class ClientSession {
     private notifyRelevantUsers(data: IWKORequest) {
         this.dao
             .users()
-            .findAll()
+            .findAll({include_docs: true})
             .then((payload) => {
                 payload.rows
                     .filter((row: any) => {
@@ -144,11 +144,16 @@ export class ClientSession {
     }
 
     private passDashboardData(data: IWKORequest) {
-        console.log("server passing data back");
-        if (this.dashData) {
-            this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
-        } else {
-            this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, null);
+        console.log("server passing data back: ", this.dashData);
+        try {
+            if (this.dashData) {
+                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+            } else {
+                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, null);
+            }
+        } catch(err) {
+            this.socket.emit(CommEvent.REQ_ERR, err);
         }
+
     }
 }

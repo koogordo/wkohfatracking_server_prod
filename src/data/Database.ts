@@ -25,7 +25,9 @@ export class Database {
     public formDBInstance(): PouchDB.Database {
         return new PouchDB(`${this.baseAddressInstance()}/forms`);
     }
-
+    public reviewGroupDBInstance(): PouchDB.Database {
+        return new PouchDB(`${this.baseAddressInstance()}/reviewgroups`);
+    }
     public osDBInstance(osDbName: string) {
         return new PouchDB(`${this.authBaseAddressInstance()}/${osDbName.toLowerCase()}`);
     }
