@@ -9,7 +9,7 @@ export class Repository<T> {
         return this.dbo.put(doc);
     }
     public update(doc: T) {
-        console.log(doc);
+       
         return this.dbo.put(doc);
     }
     public find(id: any): Promise<T> {
@@ -51,7 +51,7 @@ export class Repository<T> {
     }
 }
 
-//models
+//utils
 export interface IVisit {
     _id?: string;
     _rev?: string;
@@ -70,10 +70,11 @@ export interface IUser {
     reviewGroup: string;
     roles: string[];
     type: string;
+    apipassword: string;
 }
 export interface IOsClients {
     _id: string;
-    _rev: string;
+    _rev?: string;
     clients: any[];
 }
 export interface IReviewGroup {
@@ -83,4 +84,82 @@ export interface IReviewGroup {
     reviewees: any;
     reviewers: any;
 }
+export interface IBlankForm {
+    _id?: string;
+    _rev: string;
+    form: any;
+}
 
+export interface IForm {
+    allowedClientTypes?: any[];
+    client?: string;
+    os?: string;
+    tabs: ITab[];
+    status?: any[];
+    formID?: string;
+    formRev?: string;
+    description?: string;
+    name?: string;
+}
+export interface ITab {
+    name?: string;
+    description?: string
+    sections: ISection[]
+}
+export interface ISection {
+    name?: string;
+    description?: string
+    rows: IRow[]
+}
+export interface IRow {
+    columnGap?: string;
+    columns: IColumn[]
+}
+export interface IColumn {
+    align?: string,
+    offset?: string,
+    width?: string,
+    questions: IQuestion[],
+}
+export interface IOption {
+    key?: string;
+    value?:string;
+    specify?: boolean;
+    rows: IRow[]
+}
+export interface IQuestion {
+    key?: string;
+    label?: string;
+    labelPosition?: string;
+    labelWidth?: string;
+    type?: string;
+    description?: string;
+    required?: boolean;
+    notes?: any[];
+    validators?: any[];
+    usePreviousValue?: boolean;
+    input?: any;
+    default?: any;
+    specifyPosition?: string;
+    placeholder?: any;
+    hint?: any;
+    options?: IOption[];
+    orientation?: string;
+    offset?: string;
+    changed?: boolean;
+    maxDate?: string;
+    minDate?: string;
+    defaultToday?: boolean;
+    dropdownWidth?: string;
+    function?: string;
+    indices?: any;
+    maxValue?: any;
+    minValue?: any;
+    rows?: IRow[];
+    addButtonsText?: string;
+    removable?: boolean;
+    inorout?: any;
+    min?: any;
+    max?: any;
+    step?: any;
+}

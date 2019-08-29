@@ -1,7 +1,7 @@
 import {BehaviorSubject} from "rxjs";
 
 import OsDashboardBuilder from "./OsDashboardBuilder";
-import {WKODbAccess} from "./WKODbAccess";
+import {WKODbAccess} from "../../../data/WKODbAccess";
 
 export default class RevDashboardBuilder {
     private dao: WKODbAccess;
@@ -55,7 +55,7 @@ export default class RevDashboardBuilder {
                 families: null,
                 actionRequired: null
             }
-            console.log(tempOs)
+
             for (const family of dashFams) {
                 for (const client of family.child) {
                     if (this.isActionRequiredRev(client)[0]) {
@@ -72,7 +72,7 @@ export default class RevDashboardBuilder {
             }
             tempOs.families = dashFams
             tempOs.actionRequired = needAction;
-            console.log(tempOs)
+
             return tempOs;
         })
     }
@@ -81,10 +81,11 @@ export default class RevDashboardBuilder {
 
             const reviewerOsPromises = []
             for (const os of reviewGroupOses) {
+           
                 reviewerOsPromises.push(this.buildOs(os));
             }
             return Promise.all(reviewerOsPromises).then(reviewerOses => {
-                console.log(reviewerOses);
+               
                 return reviewerOses;
             }).catch(err => {
                 return err;
@@ -102,7 +103,6 @@ export default class RevDashboardBuilder {
         client.forms.ReviewForms.map((form:any) => {
             formStatuses.push(form.form.status[form.form.status.length - 1]);
         });
-        console.log(formStatuses.length > 0 ? [true, formStatuses] : [false, null])
         return formStatuses.length > 0 ? [true, formStatuses] : [false, null];
     }
 }

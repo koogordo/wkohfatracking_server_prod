@@ -1,6 +1,6 @@
-import {WKODbAccess} from "./WKODbAccess";
+import {WKODbAccess} from "../../../data/WKODbAccess";
 import moment from "moment";
-import FormUtil from "../utils/FormUtil";
+import FormUtil from "../../../utils/FormUtil";
 export default class AdminDashboardBuilder {
     private dao: WKODbAccess;
     private username: string;
@@ -44,7 +44,7 @@ export default class AdminDashboardBuilder {
                             visitDateQ = FormUtil.findFormPartByIndex(doc.form, visDateIndex);
                             doc.form.visitDate = moment(visitDateQ.input).format("MMM DD YYYY");
                         }
-                        console.log(doc.form.visitDate);
+                      
                         doc.form.dateSubmitted = moment(doc.form.status[doc.form.status.length - 1].date).format("MMM DD YYYY");
                         return doc;
                     })
@@ -57,7 +57,7 @@ export default class AdminDashboardBuilder {
 
     public buildDashboard() {
         return this.getVisits().then(queuedVisits => {
-            console.log(queuedVisits);
+     
             return queuedVisits;
         })
     }

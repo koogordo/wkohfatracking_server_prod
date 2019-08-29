@@ -39,7 +39,7 @@ export class WKOSocket {
             const dao: WKODbAccess = new WKODbAccess(this.dboConfig);
             const newConn: ClientSession = new ClientSession(user, socket, dao, this);
             this.registerClient(user, newConn);
-            console.log(user, " CONNECTED");
+          
         });
     }
     private socketMiddleware() {

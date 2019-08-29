@@ -7,6 +7,9 @@ import { ClientSession } from "./ClientSession";
 import { IdbConfig } from "../data/Database";
 import cors from "cors";
 import DashboardController from "../api/dashboard/DashboardController";
+import AuthController from "../api/authentication/AuthController";
+import UserController from "../api/user/UserController"
+import VisitController from "../api/visit/VisitController";
 export class WKOServer {
     private server!: Server;
     private app!: express.Application;
@@ -51,7 +54,10 @@ export class WKOServer {
         this.app.use(cors());
     }
     private apiRouting() {
-        this.app.use("/api", DashboardController);
+        this.app.use("/dashboard", DashboardController);
+        this.app.use("/auth", AuthController);
+        this.app.use("/user", UserController);
+        this.app.use("/visit", VisitController);
     }
 }
 

@@ -23,7 +23,7 @@ export class DashData {
         };
     }
     public mergeNotification(data: IWKONotification) {
-        console.log(this.userType);
+        
         if (this.userType === "os") {
             this.makeOsNotifyChanges(data);
         } else if (this.userType === "reviewer") {
@@ -32,13 +32,13 @@ export class DashData {
     }
     private makeReviewerNotifyChanges(data: IWKONotification) {
         const changeToForm = data.newForm;
-        console.log(`findClientInReviewer(${data.changedBy.split(":")[1]}, ${changeToForm.form.client})`);
+     
         const client = this.findClientInReviewer(data.changedBy.split(":")[1], changeToForm.form.client);
 
         if (client) {
             // tslint:disable-next-line: max-line-length
             const allForms = client.forms.TransitionForms.concat(client.forms.ReviewForms.concat(client.forms.CompleteForms));
-            console.log(allForms);
+        
             const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
             const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
             this.deleteOldForm(client, oldStatus, data.newForm._id, "fromReviewer");
@@ -52,7 +52,7 @@ export class DashData {
 
         if (client) {
             const allForms = client.forms.TransitionForms.concat(client.forms.ActiveForms.concat(client.forms.LockedForms));
-            console.log(allForms);
+     
             const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
             const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
             this.deleteOldForm(client, oldStatus, data.newForm._id, "fromOS");
@@ -63,7 +63,7 @@ export class DashData {
     private getOldFormStatus(forms: any, changeToForm: any) {
         // tslint:disable-next-line: forin
         for (const i in forms) {
-            console.log(changeToForm._id, forms[i]._id);
+   
             if (changeToForm === forms[i]._id) {
                 return forms[i].form.status[forms[i].form.status.length - 1].value;
             }
@@ -251,7 +251,7 @@ export class DashData {
         for (let i in this.data) {
             if (this.data[i].OSUsername === os) {
                 for (let j in this.data[i].families) {
-                    console.log(this.data[i].families[j]);
+                   
                     if (this.data[i].families[j].familyID === parsedID[0]) {
                         return this.data[i].families[j][parsedID[1]][parsedID[2]];
                     }

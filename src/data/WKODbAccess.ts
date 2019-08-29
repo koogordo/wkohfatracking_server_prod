@@ -1,5 +1,5 @@
 import { Database, IdbConfig } from "./Database";
-import {Repository, IVisit, IUser, IOsClients, IReviewGroup} from "./Repository";
+import {Repository, IVisit, IUser, IOsClients, IReviewGroup, IBlankForm} from "./Repository";
 export class WKODbAccess {
     private dbo: Database;
     constructor(config: IdbConfig) {
@@ -22,6 +22,9 @@ export class WKODbAccess {
     }
     public reviewGroups() {
         return new Repository<IReviewGroup>(this.dbo.reviewGroupDBInstance());
+    }
+    public forms() {
+        return new Repository<IBlankForm>(this.dbo.formDBInstance());
     }
 
 }

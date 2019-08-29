@@ -1,15 +1,16 @@
-import express from 'express'
+import express, {Request, Response} from 'express'
 import { WKODbAccess} from "../../data/WKODbAccess";
 import {DbConfig} from "../../config"
 import {IWKORequest} from "../../server/WKOCommunication";
-import OsDashboardBuilder from "../../data/OsDashboardBuilder";
-import RevDashboardBuilder from "../../data/RevDashboardBuilder";
-import AdminDashboardBuilder from "../../data/AdminDashboardBuilder";
+import OsDashboardBuilder from "./utils/OsDashboardBuilder";
+import RevDashboardBuilder from "./utils/RevDashboardBuilder";
+import AdminDashboardBuilder from "./utils/AdminDashboardBuilder";
+import {checkJwt, checkRole} from "../authentication/middleware/JwtMiddleware";
 const DashboardController = express.Router();
 const router = express.Router();
 const dao = new WKODbAccess(DbConfig);
-DashboardController.get('/osdashboard/:id', (req, res) => {
-    console.log("reached endpoint with id: ",  req.params.id)
+DashboardController.get('/osdashboard/:id', [checkJwt], (req: Request, res: Response) => {
+  
     const username = req.params.id || null;
     let userDB;
 
@@ -29,25 +30,25 @@ DashboardController.get('/osdashboard/:id', (req, res) => {
     }
 })
 //
-DashboardController.get('/revdashboard/:id', (req, res) => {
-    console.log("reached endpoint with id: ",  req.params.id)
+DashboardController.get('/revdashboard/:id', [checkJwt, checkRole("REVIEWER")], (req: Request, res: Response) => {
+    
     const username = req.params.id || null;
 
     if (username) {
         const revDashBuilder = new RevDashboardBuilder(dao, username);
         revDashBuilder.buildDashboard().then(reviewerOses => {
-            res.json(reviewerOses);
+            res.status(200).json(reviewerOses);
         }).catch(err => {
-            res.json(err);
+            res.status(400).json(err);
         });
 
     } else {
-        res.json(new Error(`user ${username} has no dash data, user not found.`))
+        res.status(400).json({err: `user ${username} has no dash data, user not found.`})
     }
 })
 //
-DashboardController.get('/admindashboard/:id', (req, res) => {
-    console.log("reached endpoint with id: ",  req.params.id)
+DashboardController.get('/admindashboard/:id', [checkJwt, checkRole("_admin")],(req: Request, res: Response) => {
+    
     const username = req.params.id || null;
 
     if (username) {

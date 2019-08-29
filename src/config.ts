@@ -12,3 +12,5 @@ export const DbConfig: IdbConfig = {
     password: "wK0mI55ghBU9pp",
     username: "koogordo",
 };
+
+export const jwtSecret = "89fdajkl4b&$b$*$(bB#&kbhbj3kakdhbkajdnfu84r7834tr3o487bk4b23khjbe2k3brkhref";

@@ -35,12 +35,12 @@ export class ClientSession {
             this.handleMessage(wkoMessage);
         });
         this.socket.on(CommEvent.REQUEST, (data: any) => {
-            console.log(`Request was made by: ${data.reqUser}`);
+          
             const wkoFormUpdate: IWKORequest = data as IWKORequest;
             this.handleRequest(wkoFormUpdate);
         });
         this.socket.on(CommEvent.DASHBOARD_DATA_PASS, (data: IWKODashboardData) => {
-            console.log(data);
+         
             if (!this.dashData) {
                 this.dashData = new DashData(data.data, data.username, data.userType);
                 this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
@@ -72,7 +72,7 @@ export class ClientSession {
                 this.notifyRelevantUsers(data);
                 break;
             case "get-dash-data":
-                console.log("server recieved data pass request");
+           
                 this.passDashboardData(data);
             default: {
                 break;
@@ -91,7 +91,7 @@ export class ClientSession {
             })
             .catch((err) => {
                 const s = this.dispatch.findSession(req.reqUser);
-                console.log("There was an update error")
+           
                 if (s) {
                     s.getSocket().emit(CommEvent.REQ_ERR, err);
                 }
@@ -134,8 +134,9 @@ export class ClientSession {
                             newStatus: data.visit.form.status[data.visit.form.status.length - 1],
                             timestamp: Date.now().toString(),
                         };
-                        this.dashData.mergeNotification(notification);
+                        // this.dashData.mergeNotification(notification);
                         if (s) {
+                            
                             const sock = s.getSocket();
                             sock.emit(CommEvent.NOTIFICATION, notification);
                         }
@@ -144,7 +145,7 @@ export class ClientSession {
     }
 
     private passDashboardData(data: IWKORequest) {
-        console.log("server passing data back: ", this.dashData);
+        
         try {
             if (this.dashData) {
                 this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());

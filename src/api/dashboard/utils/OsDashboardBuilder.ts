@@ -1,6 +1,6 @@
-import {WKODbAccess} from "./WKODbAccess";
+import {WKODbAccess} from "../../../data/WKODbAccess";
 import {BehaviorSubject} from "rxjs";
-import {IOsClients} from "./Repository";
+import {IOsClients} from "../../../data/Repository";
 const pouchCollate = require("pouchdb-collate");
 import moment from "moment"
 export default class OsDashboardBuilder {
