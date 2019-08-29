@@ -10,7 +10,7 @@ import OsViewVisitBuilder from "./utils/OsViewVisitBuilder";
 import FormUtil from "../../utils/FormUtil";
 const VisitController = express.Router();
 const dao = new WKODbAccess(DbConfig);
-VisitController.post("/viewvisit", (req: Request, res: Response) => {
+VisitController.post("/viewvisit", [checkJwt], (req: Request, res: Response) => {
 
     if (!req.body.id) {
         res.status(400).json({err: `Missing request params "id"`, body: req.body})
@@ -31,15 +31,15 @@ VisitController.post("/viewvisit", (req: Request, res: Response) => {
         res.status(400).json({err});
     })
 })
-VisitController.post("/question", (req: Request, res: Response) => {
-    const key = req.body.key;
-    const formID = req.body.formID;
-    dao.visits('os41').find(formID).then(formDoc => {
-        const q = FormUtil.getQuestionCompressedForm(key, formDoc);
-        res.status(200).json({result: q});
-    })
-})
-VisitController.get("/admin/viewform/:id", [checkJwt, checkRole("ADMIN")],(req: Request, res: Response) => {
-})
+// VisitController.post("/question", (req: Request, res: Response) => {
+//     const key = req.body.key;
+//     const formID = req.body.formID;
+//     dao.visits('os41').find(formID).then(formDoc => {
+//         const q = FormUtil.getQuestionCompressedForm(key, formDoc);
+//         res.status(200).json({result: q});
+//     })
+// })
+// VisitController.get("/admin/viewform/:id", [checkJwt, checkRole("ADMIN")],(req: Request, res: Response) => {
+// })
 
 export default VisitController;

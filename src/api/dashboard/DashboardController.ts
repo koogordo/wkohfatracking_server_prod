@@ -47,7 +47,7 @@ DashboardController.get('/revdashboard/:id', [checkJwt, checkRole("REVIEWER")], 
     }
 })
 //
-DashboardController.get('/admindashboard/:id', [checkJwt, checkRole("_admin")],(req: Request, res: Response) => {
+DashboardController.get('/admindashboard/:id', [checkJwt, checkRole("ADMIN")],(req: Request, res: Response) => {
     
     const username = req.params.id || null;
 
