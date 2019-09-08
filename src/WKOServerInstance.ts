@@ -7,14 +7,8 @@ const config: IAppConfig = {
     middleware: [],
     port: 3000,
 };
-const dbConfig: IdbConfig = {
-    domain: "www.hfatracking.net",
-    password: "wK0mI55ghBU9pp",
-    username: "koogordo",
-};
 const wkoInstance = new WKOServer(AppConfig);
 const socketServer = new WKOSocket(wkoInstance.serverInstance());
 socketServer.dboConfiguration(DbConfig);
 wkoInstance.attachSocket(socketServer);
-
 export const WKOServerInstance = wkoInstance;

@@ -1,4 +1,5 @@
 import PouchDB from "pouchdb";
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
 export class Repository<T> {
     protected dbo!: PouchDB.Database;
     constructor(dbo: PouchDB.Database) {
@@ -66,6 +67,8 @@ export interface IUser {
     firstName: string;
     form: any;
     lastName: string;
+    wkoid: number;
+    phone: string;
     name: string;
     reviewGroup: string;
     roles: string[];

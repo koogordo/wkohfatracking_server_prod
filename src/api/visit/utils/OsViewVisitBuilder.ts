@@ -90,6 +90,34 @@ export default class OsViewVisitBuilder {
             return templateFormDoc;
         })
     }
+    getPreviousVisits() {
+        return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
+            return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
+                const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
+                    if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
+                        return (
+                            (row.doc.form.name === blankForm.form.name) &&
+                            (row.doc._id !== blankForm._id) &&
+                            (row.doc.form.client === this.clientID) &&
+                            (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
+                        );
+                    }
+                    return false;
+                }).map((row: any) => {
+                    return row.doc
+                });
+                const orderedForms = FormUtil.orderFormsByDate(visitRecords);
+                return orderedForms.map(doc => {
+                    console.log(doc)
+                    if (FormUtil.isCompressed(doc)) {
+                        return FormUtil.expand(blankForm, doc)
+                    } else {
+                        return doc
+                    }
+                });
+            });
+        }).catch(err => {throw err});
+    }
 
     private expandForms(visitData: any) {
         if (FormUtil.isCompressed(visitData.currentVisit)) {
@@ -103,4 +131,6 @@ export default class OsViewVisitBuilder {
         return visitData;
 
     }
+
+
 }

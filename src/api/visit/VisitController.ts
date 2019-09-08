@@ -22,13 +22,35 @@ VisitController.post("/viewvisit", [checkJwt], (req: Request, res: Response) => 
         res.status(400).json({err: `Missing request body value "clientID"`, body: req.body})
     }
 
-    const osViewVisitBuiler = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
-    osViewVisitBuiler.makeDisplayVisit().then((visit) => {
+    const osViewVisitBuilder = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
+    osViewVisitBuilder.makeDisplayVisit().then((visit) => {
 
         res.status(200).json(visit)
     }).catch(err => {
        
         res.status(400).json({err});
+    })
+})
+
+VisitController.post("/prevvisits", (req: Request, res: Response) => {
+    if (!req.body.id) {
+        res.status(400).json({err: `Missing request params "id"`, body: req.body})
+    }
+    if (!req.body.userDBName) {
+        res.status(400).json({err: `Missing request body value "userDBName"`, body: req.body})
+    }
+    if (!req.body.clientID) {
+        res.status(400).json({err: `Missing request body value "clientID"`, body: req.body})
+    }
+
+    const osViewVisitBuilder = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
+    osViewVisitBuilder.getPreviousVisits().then(prevVisits => {
+        res.status(200).json(prevVisits)
+    }).catch(err => {
+        res.status(400).json({
+            ok: false,
+            err
+        })
     })
 })
 // VisitController.post("/question", (req: Request, res: Response) => {

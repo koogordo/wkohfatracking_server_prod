@@ -33,9 +33,9 @@ export class Database {
     }
 
     private baseAddressInstance(): string {
-        return `http://${this.config.domain}/couchdb`;
+        return `https://${this.config.domain}/couchdb`;
     }
     private authBaseAddressInstance(): string {
-        return `http://${this.config.username}:${this.config.password}@${this.config.domain}/couchdb`;
+        return `https://${this.config.username}:${this.config.password}@${this.config.domain}/couchdb`;
     }
 }

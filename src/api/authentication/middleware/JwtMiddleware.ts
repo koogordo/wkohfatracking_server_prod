@@ -3,6 +3,9 @@ import * as jwt from "jsonwebtoken";
 import { jwtSecret } from "../../../config";
 
 export function extractTokenFromAuthHeader(auth: string) {
+    if (!auth) {
+        throw new Error("Could not extract token from header")
+    }
     return auth.split(" ")[1];
 }
 export const checkJwt= (req: Request, res: Response, next: NextFunction) => {

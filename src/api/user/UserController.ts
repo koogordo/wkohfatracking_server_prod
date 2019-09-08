@@ -4,13 +4,14 @@ import {DbConfig} from "../../config"
 import {jwtSecret} from "../../config";
 import * as jwt from 'jsonwebtoken';
 import {IOsClients, IUser} from "../../data/Repository";
+console.log(DbConfig.domain)
 const dao = new WKODbAccess(DbConfig);
 import * as bcrypt from 'bcryptjs'
 import {checkJwt, checkRole} from "../authentication/middleware/JwtMiddleware";
 import ClientAssignmentEditor from "./ClientAssignmentEditor";
 const UserController = express.Router();
 
-UserController.post("/register", [checkJwt, checkRole("ADMIN")], (req: Request, res: Response) => {
+UserController.post("/register", /* [checkJwt, checkRole("ADMIN")], */(req: Request, res: Response) => {
     if (!req.body) {
         res.status(400).json({err: new Error("Invalid request body"), body: req.body})
     }
@@ -23,12 +24,12 @@ UserController.post("/register", [checkJwt, checkRole("ADMIN")], (req: Request, 
         res.status(400).json({err: "User already exists", username: newUser._id})
     }).catch( err => {
         if (!(err.error === "not_found")) {
-            res.status(400).json({err: "Error registering user", body: newUser})
+            res.status(400).json({ok: false, err: err})
         }
         dao.users().create(req.body).then(createRes => {
             res.status(200).json({success: true, user: newUser});
         }).catch(err => {
-            res.status(400).json({err: "Error registering user", body: newUser});
+            res.status(400).json({ok:false, err:err});
         })
     })
 
