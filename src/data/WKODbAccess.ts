@@ -26,5 +26,8 @@ export class WKODbAccess {
     public forms() {
         return new Repository<IBlankForm>(this.dbo.formDBInstance());
     }
+    public archive() {
+        return new Repository<IVisit>(this.dbo.archiveDBInstance());
+    }
 
 }

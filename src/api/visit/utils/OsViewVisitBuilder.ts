@@ -15,38 +15,53 @@ export default class OsViewVisitBuilder {
     }
 
     getNewVisitPrevVisitPair() {
-        return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
-            return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
-                const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
-                    if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
-                        return (
-                            (row.doc.form.name === blankForm.form.name) &&
-                            (row.doc._id !== blankForm._id) &&
-                            (row.doc.form.client === this.clientID) &&
-                            (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
-                        );
-                    }
-                    return false;
-                }).map((row: any) => {
-                    return row.doc
-                });
-                const orderedForms = FormUtil.orderFormsByDate(visitRecords);
-                let prevVisit;
-                if (orderedForms.length > 0) {
-                    prevVisit = orderedForms[0];
-                } else {
-                    prevVisit = null
-                }
-                const templateForm = JSON.parse(JSON.stringify(blankForm))
-                const result: any = {
-                    success: true,
-                    visit: blankForm,
-                    prevVisit: prevVisit,
-                    templateForm: templateForm
-                }
-                return result;
-            });
-        }).catch(err => {throw err});
+        return Promise.all([this.combineOsVisitsOfCurrentType(), this.currentVisitTemplate()]).then(([osVisits, visitTemplate]) => {
+            const result: any = {};
+            result.success = true;
+            result.visit = visitTemplate;
+            result.templateForm = visitTemplate;
+
+            if ( osVisits.length > 0) {
+                result.prevVisit = osVisits[0]
+            } else {
+                result.prevVisit = null
+            }
+            return result;
+        }).catch(err => {
+            throw err;
+        })
+        // return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
+        //     return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
+        //         const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
+        //             if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
+        //                 return (
+        //                     (row.doc.form.name === blankForm.form.name) &&
+        //                     (row.doc._id !== blankForm._id) &&
+        //                     (row.doc.form.client === this.clientID) &&
+        //                     (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
+        //                 );
+        //             }
+        //             return false;
+        //         }).map((row: any) => {
+        //             return row.doc
+        //         });
+        //         const orderedForms = FormUtil.orderFormsByDate(visitRecords);
+        //         let prevVisit;
+        //         if (orderedForms.length > 0) {
+        //             prevVisit = orderedForms[0];
+        //         } else {
+        //             prevVisit = null
+        //         }
+        //         const templateForm = JSON.parse(JSON.stringify(blankForm))
+        //         const result: any = {
+        //             success: true,
+        //             visit: blankForm,
+        //             prevVisit: prevVisit,
+        //             templateForm: templateForm
+        //         }
+        //         return result;
+        //     });
+        // }).catch(err => {throw err});
     }
     getVisitViewData() {
         if (this.formID.startsWith('54blankForm')) {
@@ -91,32 +106,134 @@ export default class OsViewVisitBuilder {
         })
     }
     getPreviousVisits() {
-        return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
-            return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
-                const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
-                    if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
-                        return (
-                            (row.doc.form.name === blankForm.form.name) &&
-                            (row.doc._id !== blankForm._id) &&
-                            (row.doc.form.client === this.clientID) &&
-                            (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
-                        );
-                    }
-                    return false;
+        // return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
+        //     return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
+        //         const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
+        //             if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
+        //                 return (
+        //                     (row.doc.form.name === blankForm.form.name) &&
+        //                     (row.doc._id !== blankForm._id) &&
+        //                     (row.doc.form.client === this.clientID) &&
+        //                     (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
+        //                 );
+        //             }
+        //             return false;
+        //         }).map((row: any) => {
+        //             return row.doc
+        //         });
+        //         const orderedForms = FormUtil.orderFormsByDate(visitRecords);
+        //         return orderedForms.map(doc => {
+        //             console.log(doc)
+        //             if (FormUtil.isCompressed(doc)) {
+        //                 return FormUtil.expand(blankForm, doc)
+        //             } else {
+        //                 return doc
+        //             }
+        //         });
+        //     });
+        // }).catch(err => {throw err});
+        return Promise.all([this.combineOsVisitsOfCurrentType(), this.archivedVisitsOfCurrentType()]).then(([activeVisits, archivedVisits]) => {
+            return activeVisits.concat(archivedVisits);
+        }).catch(err => {
+            throw err;
+        });
+    }
+    archivedVisitsOfCurrentType() {
+        return Promise.all([this.currentVisitName(), this.currentVisitTemplate()]).then(([currentVisitName, currentVisitTemplate]) => {
+            return this.dao.archive().query("archiveFormsDesign/byClientAndName", {key: [this.clientID, currentVisitName]}).then(payload => {
+                const visitDocs = payload.rows.filter((row: any) => {
+                    return row.doc._id !== this.formID
                 }).map((row: any) => {
                     return row.doc
                 });
-                const orderedForms = FormUtil.orderFormsByDate(visitRecords);
+                const orderedForms = FormUtil.orderFormsByDate(visitDocs);
                 return orderedForms.map(doc => {
                     console.log(doc)
                     if (FormUtil.isCompressed(doc)) {
-                        return FormUtil.expand(blankForm, doc)
+                        return FormUtil.expand(currentVisitTemplate, doc)
                     } else {
                         return doc
                     }
                 });
-            });
+            }).catch( err => {throw err})
         }).catch(err => {throw err});
+
+
+
+    }
+    combineOsVisitsOfCurrentType() {
+        return Promise.all([this.osNames(), this.currentVisitName(), this.currentVisitTemplate()]).then(([osNames, visitName, visitTemplate]) => {
+
+            const osAllDocPromises: Promise<any>[] = []
+            osNames.forEach((name: any) => {
+                osAllDocPromises.push(this.dao.visits(name).findAll({include_docs: true}).then(payload => {
+                    const visitDocs = payload.rows.filter((row: any) => {
+                        if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
+                            return (
+                                (row.doc.form.name === visitName) &&
+                                (row.doc._id !== this.formID) &&
+                                (!row.doc._id.startsWith("54blankForm")) &&
+                                (row.doc.form.client === this.clientID) &&
+                                (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
+                            );
+                        }
+                    }).map((row: any) => {
+                        return row.doc;
+                    })
+
+                    return visitDocs;
+                }));
+            })
+            let visitsResult: any[] = []
+            return Promise.all(osAllDocPromises).then(allDocsOfeachOs => {
+                allDocsOfeachOs.forEach(osVisits => {
+                    visitsResult = visitsResult.concat(osVisits);
+                })
+
+                const orderedForms = FormUtil.orderFormsByDate(visitsResult);
+                return orderedForms.map(doc => {
+                    if (FormUtil.isCompressed(doc)) {
+                        return FormUtil.expand(visitTemplate, doc)
+                    } else {
+                        return doc
+                    }
+                });
+            }).catch(err => {throw err})
+        }).catch(err => {throw err})
+    }
+    currentVisitName() {
+        if (this.formID.startsWith("54blankForm")) {
+            return this.dao.forms().find(this.formID).then(doc => {
+                return doc.form.name;
+            }).catch( err => {throw err})
+        } else {
+            return this.dao.visits(this.userDBName).find(this.formID).then(doc => {
+                return doc.form.name;
+            }).catch(err => {throw err})
+        }
+    }
+
+    currentVisitTemplate() {
+        if (this.formID.startsWith("54blankForm")) {
+            return this.dao.forms().find(this.formID).then(doc => {
+                return doc;
+            }).catch(err => {throw err})
+        } else {
+            return this.dao.visits(this.userDBName).find(this.formID).then(doc => {
+                return this.dao.forms().find(doc.form.formID).then(doc => {
+                    return doc;
+                })
+            }).catch(err => {throw err})
+        }
+    }
+    osNames() {
+        return this.dao.users().findAll({include_docs: true}).then(payload => {
+            return payload.rows.filter((row: any) => {
+                return row.doc._id.startsWith("org.couchdb.user:") && row.doc.roles.indexOf("OS") > -1
+            }).map((row:any)=> {
+                return row.doc.name
+            })
+        }).catch(err => {throw err})
     }
 
     private expandForms(visitData: any) {

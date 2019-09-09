@@ -32,7 +32,7 @@ VisitController.post("/viewvisit", [checkJwt], (req: Request, res: Response) => 
     })
 })
 
-VisitController.post("/prevvisits", (req: Request, res: Response) => {
+VisitController.post("/prevvisits", [checkJwt],(req: Request, res: Response) => {
     if (!req.body.id) {
         res.status(400).json({err: `Missing request params "id"`, body: req.body})
     }
