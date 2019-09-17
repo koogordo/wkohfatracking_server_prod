@@ -8,7 +8,7 @@ export const AppConfig: IAppConfig = {
 };
 
 export const DbConfig: IdbConfig = {
-    domain: "hfatracking.net",
+    domain: "www.hfatracking.net",
     password: "wK0mI55ghBU9pp",
     username: "admin",
 };
