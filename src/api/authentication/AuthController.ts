@@ -30,6 +30,7 @@ AuthController.post("/login", (req, res) => {
         if(err.error === 'not_found') {
             res.status(400).json({err: "Username Incorrect"})
         }
+        res.status(400).json({err})
     })
 });
 

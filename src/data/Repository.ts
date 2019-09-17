@@ -1,5 +1,4 @@
 import PouchDB from "pouchdb";
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"
 export class Repository<T> {
     protected dbo!: PouchDB.Database;
     constructor(dbo: PouchDB.Database) {
