@@ -36,7 +36,7 @@ export default class RevDashboardBuilder {
         const uniqueOS = [];
 
         const payloadWithReviewersRemoved = osPayload.rows.filter((row: any) => {
-            return row.doc.roles.indexOf("REVIEWER") < 0;
+            return row.doc.roles.indexOf("REVIEWER") < 0 && row.doc.roles.indexOf("ADMIN") < 0;
         });
         const osUserNameArray = payloadWithReviewersRemoved.map((row: any) => {
             return row.doc.name;
