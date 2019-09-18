@@ -74,7 +74,7 @@ export default class RevDashboardBuilder {
             tempOs.actionRequired = needAction;
 
             return tempOs;
-        })
+        }).catch(err => err);
     }
     buildDashboard() {
         return this.getOsesInRevGroup().then(reviewGroupOses => {
