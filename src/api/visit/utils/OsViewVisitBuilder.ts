@@ -94,7 +94,7 @@ export default class OsViewVisitBuilder {
     makeDisplayVisit() {
         return this.getVisitViewData().then(visit => {
             return visit;
-        })
+        }).catch(err => err)
     }
     getFormTemplate(formName: string) {
         return this.dao.forms().findAll({include_docs:true}).then(payload => {
@@ -103,44 +103,19 @@ export default class OsViewVisitBuilder {
                 return templateDoc.form.name === formName;
             })
             return templateFormDoc;
-        })
+        }).catch(err => {return err})
     }
     getPreviousVisits() {
-        // return this.dao.forms().find(this.formID).then((blankForm: IBlankForm) => {
-        //     return this.dao.visits(this.userDBName).findAll({include_docs: true}).then(payload => {
-        //         const visitRecords: any[] = (payload.rows as Array<any>).filter((row: any) => {
-        //             if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
-        //                 return (
-        //                     (row.doc.form.name === blankForm.form.name) &&
-        //                     (row.doc._id !== blankForm._id) &&
-        //                     (row.doc.form.client === this.clientID) &&
-        //                     (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
-        //                 );
-        //             }
-        //             return false;
-        //         }).map((row: any) => {
-        //             return row.doc
-        //         });
-        //         const orderedForms = FormUtil.orderFormsByDate(visitRecords);
-        //         return orderedForms.map(doc => {
-        //             console.log(doc)
-        //             if (FormUtil.isCompressed(doc)) {
-        //                 return FormUtil.expand(blankForm, doc)
-        //             } else {
-        //                 return doc
-        //             }
-        //         });
-        //     });
-        // }).catch(err => {throw err});
         return Promise.all([this.combineOsVisitsOfCurrentType(), this.archivedVisitsOfCurrentType()]).then(([activeVisits, archivedVisits]) => {
             return activeVisits.concat(archivedVisits);
         }).catch(err => {
-            throw err;
+            return err;
         });
     }
     archivedVisitsOfCurrentType() {
         return Promise.all([this.currentVisitName(), this.currentVisitTemplate()]).then(([currentVisitName, currentVisitTemplate]) => {
-            return this.dao.archive().query("archiveFormsDesign/byClientAndName", {key: [this.clientID, currentVisitName]}).then(payload => {
+            return this.dao.archive().query("archiveFormsDesign/byClientAndName", {include_docs:true, key: [this.clientID, currentVisitName]}).then(payload => {
+                console.log(payload.rows.length);
                 const visitDocs = payload.rows.filter((row: any) => {
                     return row.doc._id !== this.formID
                 }).map((row: any) => {
@@ -148,7 +123,6 @@ export default class OsViewVisitBuilder {
                 });
                 const orderedForms = FormUtil.orderFormsByDate(visitDocs);
                 return orderedForms.map(doc => {
-                    console.log(doc)
                     if (FormUtil.isCompressed(doc)) {
                         return FormUtil.expand(currentVisitTemplate, doc)
                     } else {
@@ -157,8 +131,6 @@ export default class OsViewVisitBuilder {
                 });
             }).catch( err => {throw err})
         }).catch(err => {throw err});
-
-
 
     }
     combineOsVisitsOfCurrentType() {
@@ -182,6 +154,8 @@ export default class OsViewVisitBuilder {
                     })
 
                     return visitDocs;
+                }).catch(err => {
+                    return err;
                 }));
             })
             let visitsResult: any[] = []
@@ -222,7 +196,7 @@ export default class OsViewVisitBuilder {
             return this.dao.visits(this.userDBName).find(this.formID).then(doc => {
                 return this.dao.forms().find(doc.form.formID).then(doc => {
                     return doc;
-                })
+                }).catch(err => {throw err})
             }).catch(err => {throw err})
         }
     }

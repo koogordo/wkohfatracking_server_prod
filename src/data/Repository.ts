@@ -43,7 +43,7 @@ export class Repository<T> {
                     resolve(payload);
                 }
                 else {
-                    throw new Error(`Error querying view ${designView} failed`);
+                    reject(new Error(`Error querying view ${designView} failed`));
                 }
             })
         })

@@ -23,10 +23,14 @@ export default class RevDashboardBuilder {
     }
     getOsesInRevGroup() {
         return this.getReviewGroup().then(reviewGroup => {
-            return this.dao.users().query("_auth/userByReviewGroup", { include_docs: true, key: [reviewGroup || "R1"] }).then(payload =>{
+            return this.dao.users().query("review_groups/byReviewGroup", { include_docs: true, key: reviewGroup || "R1" }).then(payload => {
                 return this.makeOsesUnique(payload);
-            }).catch(err => err);
-        }).catch(err => err);
+            }).catch(err => {
+                return err;
+            });
+        }).catch(err => {
+            return err;
+        });
     }
     makeOsesUnique(osPayload: any) {
         const uniqueOS = [];
@@ -78,7 +82,6 @@ export default class RevDashboardBuilder {
     }
     buildDashboard() {
         return this.getOsesInRevGroup().then(reviewGroupOses => {
-
             const reviewerOsPromises = []
             for (const os of reviewGroupOses) {
            
@@ -90,8 +93,11 @@ export default class RevDashboardBuilder {
             }).catch(err => {
                 return err;
             })
-        }).catch(err => err);
+        }).catch(err => {
+            return err;
+        });
     }
+
     isActionRequiredRev(client: any) {
         let formStatuses: any[] = [];
         client.forms.CompleteForms.map((form:any) => {
