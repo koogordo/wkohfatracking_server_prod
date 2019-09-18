@@ -17,16 +17,16 @@ export default class RevDashboardBuilder {
             if (user) {
                 return user.reviewGroup
             } else {
-                throw new Error(`Unable to build dash for user: ${this.username} does not exist.`)
+                return new Error(`Unable to build dash for user: ${this.username} does not exist.`)
             }
-        })
+        }).catch(err => err);
     }
     getOsesInRevGroup() {
         return this.getReviewGroup().then(reviewGroup => {
             return this.dao.users().query("_auth/userByReviewGroup", { include_docs: true, key: [reviewGroup || "R1"] }).then(payload =>{
                 return this.makeOsesUnique(payload);
-            })
-        })
+            }).catch(err => err);
+        }).catch(err => err);
     }
     makeOsesUnique(osPayload: any) {
         const uniqueOS = [];
@@ -90,7 +90,7 @@ export default class RevDashboardBuilder {
             }).catch(err => {
                 return err;
             })
-        })
+        }).catch(err => err);
     }
     isActionRequiredRev(client: any) {
         let formStatuses: any[] = [];
