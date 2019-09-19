@@ -23,20 +23,32 @@ export default class RevDashboardBuilder {
     }
     getOsesInRevGroup() {
         return this.getReviewGroup().then(reviewGroup => {
-            return this.dao.users().query("review_groups/byReviewGroup", { include_docs: true, key: reviewGroup || "R1" }).then(payload => {
-                return this.makeOsesUnique(payload);
-            }).catch(err => {
-                return err;
-            });
+            console.log(reviewGroup)
+            if (reviewGroup !== 'ALL') {
+                return this.dao.users().query("review_groups/byReviewGroup", { include_docs: true, key: reviewGroup || "R1" }).then(payload => {
+                    return this.makeOsesUnique(payload);
+                }).catch(err => {
+                    return err;
+                });
+            } else {
+                return this.dao.users().findAll({include_docs: true}).then(payload => {
+                    return this.makeOsesUnique(payload);
+                }).catch(err => {
+                    return err;
+                })
+            }
+
         }).catch(err => {
             return err;
         });
     }
     makeOsesUnique(osPayload: any) {
         const uniqueOS = [];
-
         const payloadWithReviewersRemoved = osPayload.rows.filter((row: any) => {
-            return row.doc.roles.indexOf("REVIEWER") < 0 && row.doc.roles.indexOf("ADMIN") < 0;
+            if (row.doc._id.startsWith('org.couchdb.user')) {
+                return row.doc.roles.indexOf("REVIEWER") < 0 && row.doc.roles.indexOf("ADMIN") < 0;
+            }
+            return false;
         });
         const osUserNameArray = payloadWithReviewersRemoved.map((row: any) => {
             return row.doc.name;
