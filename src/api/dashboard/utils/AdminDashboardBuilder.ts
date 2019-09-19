@@ -34,7 +34,8 @@ export default class AdminDashboardBuilder {
                 for (const visitArr of queuedVisitsArr) {
                     const visitsForDisplay = visitArr.map((doc: any) => {
                         let visitDateQ: any;
-                        if (FormUtil.isCompressed(doc.form)) {
+                        console.log(doc);
+                        if (FormUtil.isCompressed(doc)) {
                             visitDateQ = doc.form.contents.find((question: any) => {
                                 return question.key === 'Visit Date';
                             })
@@ -46,12 +47,13 @@ export default class AdminDashboardBuilder {
                         }
                       
                         doc.form.dateSubmitted = moment(doc.form.status[doc.form.status.length - 1].date).format("MMM DD YYYY");
+                        doc.form.os = doc.form.status[doc.form.status.length - 1].username;
                         return doc;
                     })
                     queuedVisits = queuedVisits.concat(visitsForDisplay);
                 }
                 return queuedVisits
-            })
+            }).catch(err => console.log(err));
         })
     }
 
