@@ -11,25 +11,25 @@ export class Database {
     }
 
     public familyDBInstance(): PouchDB.Database {
-        return new PouchDB(`${this.baseAddressInstance()}/families`);
+        return new PouchDB(`${this.config.domain}/families`);
     }
 
     public userDBInstance(): PouchDB.Database {
-        return new PouchDB(`${this.authBaseAddressInstance()}/_users`);
+        return new PouchDB(`${this.config.domain}/_users`);
     }
 
     public archiveDBInstance(): PouchDB.Database {
-        return new PouchDB(`${this.baseAddressInstance()}/formarchive`);
+        return new PouchDB(`${this.config.domain}/formarchive`);
     }
 
     public formDBInstance(): PouchDB.Database {
-        return new PouchDB(`${this.baseAddressInstance()}/forms`);
+        return new PouchDB(`${this.config.domain}/forms`);
     }
     public reviewGroupDBInstance(): PouchDB.Database {
-        return new PouchDB(`${this.baseAddressInstance()}/reviewgroups`);
+        return new PouchDB(`${this.config.domain}/reviewgroups`);
     }
     public osDBInstance(osDbName: string) {
-        return new PouchDB(`${this.authBaseAddressInstance()}/${osDbName.toLowerCase()}`);
+        return new PouchDB(`${this.config.domain}/${osDbName.toLowerCase()}`);
     }
 
     private baseAddressInstance(): string {

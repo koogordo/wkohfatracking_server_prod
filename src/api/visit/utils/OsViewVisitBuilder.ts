@@ -23,16 +23,13 @@ export default class OsViewVisitBuilder {
 
             if ( osVisits.length > 0) {
                 result.prevVisit = osVisits[0]
-
+                return result;
             } else {
-                // return this.uncompressedPrevVisitFromArchive().then(visit => {
-                //     console.log(visit);
-                //     result.prevVisit = visit;
-                //     return result;
-                // }).catch(err => err);
-                result.prevVisit = null;
+                return this.uncompressedPrevVisitFromArchive().then(visit => {
+                    result.prevVisit = visit;
+                    return result;
+                }).catch(err => err);
             }
-            return result;
         }).catch(err => {
             throw err;
         })

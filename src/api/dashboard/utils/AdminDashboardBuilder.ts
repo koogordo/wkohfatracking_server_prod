@@ -12,6 +12,9 @@ export default class AdminDashboardBuilder {
     getOsDbNames() {
         return this.dao.users().findAll({include_docs: true}).then(payload => {
             const osRows = payload.rows.filter((row: any) => {
+                if (row.doc._id.startsWith('_design')) {
+                    return false;
+                }
                 return row.doc._id.startsWith("org.couchdb.user") && row.doc.roles.indexOf("OS") >= 0
             })
             const osDbNames = osRows.map((osRow: any) => {
@@ -32,28 +35,32 @@ export default class AdminDashboardBuilder {
             return Promise.all(promises).then((queuedVisitsArr: any[]) => {
                 let queuedVisits: any[] = [];
                 for (const visitArr of queuedVisitsArr) {
-                    const visitsForDisplay = visitArr.map((doc: any) => {
-                        let visitDateQ: any;
-                        console.log(doc);
-                        if (FormUtil.isCompressed(doc)) {
-                            visitDateQ = doc.form.contents.find((question: any) => {
-                                return question.key === 'Visit Date';
-                            })
-                            doc.form.visitDate = moment(visitDateQ.value).format("MMM DD YYYY");
-                        } else {
-                            const visDateIndex = FormUtil.indexQuestionGroup(doc.form, 'Visit Date');
-                            visitDateQ = FormUtil.findFormPartByIndex(doc.form, visDateIndex);
-                            doc.form.visitDate = moment(visitDateQ.input).format("MMM DD YYYY");
-                        }
-                      
-                        doc.form.dateSubmitted = moment(doc.form.status[doc.form.status.length - 1].date).format("MMM DD YYYY");
-                        doc.form.os = doc.form.status[doc.form.status.length - 1].username;
-                        return doc;
-                    })
-                    queuedVisits = queuedVisits.concat(visitsForDisplay);
+                    if (!visitArr.error) {
+                        const visitsForDisplay = visitArr.map((doc: any) => {
+                            let visitDateQ: any;
+                            if (FormUtil.isCompressed(doc)) {
+                                visitDateQ = doc.form.contents.find((question: any) => {
+                                    return question.key === 'Visit Date';
+                                })
+                                doc.form.visitDate = moment(visitDateQ.value).format("MMM DD YYYY");
+                            } else {
+                                const visDateIndex = FormUtil.indexQuestionGroup(doc.form, 'Visit Date');
+                                visitDateQ = FormUtil.findFormPartByIndex(doc.form, visDateIndex);
+                                doc.form.visitDate = moment(visitDateQ.input).format("MMM DD YYYY");
+                            }
+
+                            doc.form.dateSubmitted = moment(doc.form.status[doc.form.status.length - 1].date).format("MMM DD YYYY");
+                            const firstOpenStatus = doc.form.status.find((status:any) => {
+                                return status.value === 'open'
+                            });
+                            doc.form.os = firstOpenStatus.username;
+                            return doc;
+                        })
+                        queuedVisits = queuedVisits.concat(visitsForDisplay);
+                    }
                 }
                 return queuedVisits
-            }).catch(err => console.log(err));
+            }).catch(err => err);
         })
     }
 
