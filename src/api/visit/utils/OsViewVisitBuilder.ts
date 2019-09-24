@@ -15,21 +15,18 @@ export default class OsViewVisitBuilder {
     }
 
     getNewVisitPrevVisitPair() {
-        return Promise.all([this.combineOsVisitsOfCurrentType(), this.currentVisitTemplate()]).then(([osVisits, visitTemplate]) => {
+        return Promise.all([this.combineOsVisitsOfCurrentType(), this.currentVisitTemplate(), this.uncompressedPrevVisitFromArchive()]).then(([osVisits, visitTemplate, archivedPrevVisit]) => {
             const result: any = {};
             result.success = true;
             result.visit = visitTemplate;
             result.templateForm = visitTemplate;
-
+            console.log(archivedPrevVisit);
             if ( osVisits.length > 0) {
                 result.prevVisit = osVisits[0]
-                return result;
             } else {
-                return this.uncompressedPrevVisitFromArchive().then(visit => {
-                    result.prevVisit = visit;
-                    return result;
-                }).catch(err => err);
+                result.prevVisit = archivedPrevVisit;
             }
+            return result;
         }).catch(err => {
             throw err;
         })
@@ -142,7 +139,6 @@ export default class OsViewVisitBuilder {
 
     }
     uncompressedPrevVisitFromArchive() {
-        console.log("in get prev vistis")
         return Promise.all([this.currentVisitName(), this.currentVisitTemplate()]).then(([currentVisitName, currentVisitTemplate]) => {
             return this.dao.archive().query("archiveFormsDesign/byClientAndName", {include_docs:true, key: [this.clientID, currentVisitName]}).then(payload => {
                 console.log(payload.rows.length);
@@ -151,11 +147,10 @@ export default class OsViewVisitBuilder {
                 }).map((row: any) => {
                     return row.doc
                 });
-
-                const orderedForms = FormUtil.orderFormsByDate(visitDocs);
-                if (orderedForms.length < 0) {
+                if (visitDocs.length === 0) {
                     return null;
                 } else {
+                    const orderedForms = FormUtil.orderFormsByDate(visitDocs);
                     if (FormUtil.isCompressed(orderedForms[0])) {
                         return FormUtil.expand(currentVisitTemplate, orderedForms[0])
                     } else {
