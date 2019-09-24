@@ -165,12 +165,31 @@ export default class FormUtil {
             }
         } else if (form.questions) {
             form.questions.forEach((question: any) => {
-                compressedForm.contents.push({
-                    key: question.key,
-                    value: question.input,
-                    notes: question.notes || [],
-                    usePreviousValue: question.usePreviousValue
-                });
+                if (question.key === "Income") {
+                    let compressValue;
+                    if (question.indices.yearly && question.indices.yearly !== "") {
+                        compressValue = `yearly ${question.indices.yearly}`;
+                    } else if (question.indices.monthly && question.indices.monthly !== "") {
+                        compressValue = `monthly ${question.indices.monthly}`;
+                    } else if (question.indices.weekly && question.indices.weekly !== "") {
+                        compressValue = `weekly ${question.indices.weekly}`;
+                    } else {
+                        compressValue = "";
+                    }
+                    compressedForm.contents.push({
+                        key: question.key,
+                        value: compressValue,
+                        notes: question.notes || [],
+                        usePreviousValue: question.usePreviousValue
+                    });
+                } else {
+                    compressedForm.contents.push({
+                        key: question.key,
+                        value: question.input,
+                        notes: question.notes || [],
+                        usePreviousValue: question.usePreviousValue
+                    });
+                }
                 if (question.options) {
                     for (const optionControl of question.options) {
                         if (optionControl.rows.length > 0) {
@@ -201,13 +220,28 @@ export default class FormUtil {
                 formCopy.form[prop] = compressedForm.form[prop];
             }
         }
+        console.log("in expand");
         for (const question of compressedForm.form.contents) {
+            console.log(formCopy);
             const index = this.indexQuestionGroup(formCopy.form, question.key);
             const formPart = this.findFormPartByIndex(formCopy.form, index);
-            formPart.input = question.value;
+            if (question.key === "Income") {
+
+                const income = question.value.split(" ");
+                if (income[0] === "yearly") {
+                    formPart.indices.yearly = income[1];
+                } else if (income[0] === "monthly") {
+                    formPart.indices.monthly = income[1];
+                } else if (income[0] === "weekly") {
+                    formPart.indices.weekly = income[1];
+                }
+            } else {
+                formPart.input = question.value;
+            }
             formPart.notes = question.notes;
             formPart.usePreviousValue = question.usePreviousValue;
         }
+        console.log("outside question loop");
         formCopy._id = compressedForm._id;
         formCopy._rev = compressedForm._rev;
         return formCopy;

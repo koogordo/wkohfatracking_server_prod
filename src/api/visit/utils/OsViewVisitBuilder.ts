@@ -20,7 +20,6 @@ export default class OsViewVisitBuilder {
             result.success = true;
             result.visit = visitTemplate;
             result.templateForm = visitTemplate;
-            console.log(archivedPrevVisit);
             if ( osVisits.length > 0) {
                 result.prevVisit = osVisits[0]
             } else {
@@ -141,7 +140,6 @@ export default class OsViewVisitBuilder {
     uncompressedPrevVisitFromArchive() {
         return Promise.all([this.currentVisitName(), this.currentVisitTemplate()]).then(([currentVisitName, currentVisitTemplate]) => {
             return this.dao.archive().query("archiveFormsDesign/byClientAndName", {include_docs:true, key: [this.clientID, currentVisitName]}).then(payload => {
-                console.log(payload.rows.length);
                 const visitDocs = payload.rows.filter((row: any) => {
                     return row.doc._id !== this.formID
                 }).map((row: any) => {

@@ -11,7 +11,6 @@ import FormUtil from "../../utils/FormUtil";
 const VisitController = express.Router();
 const dao = new WKODbAccess(DbConfig);
 VisitController.post("/viewvisit", [checkJwt], (req: Request, res: Response) => {
-
     if (!req.body.id) {
         res.status(400).json({err: `Missing request params "id"`, body: req.body})
     }
