@@ -34,8 +34,9 @@ export default class AdminDashboardBuilder {
             }
             return Promise.all(promises).then((queuedVisitsArr: any[]) => {
                 let queuedVisits: any[] = [];
+                console.log(queuedVisitsArr.length);
                 for (const visitArr of queuedVisitsArr) {
-                    if (!visitArr.error) {
+                    if (!visitArr.error && visitArr.length > 0) {
                         const visitsForDisplay = visitArr.map((doc: any) => {
                             let visitDateQ: any;
                             if (FormUtil.isCompressed(doc)) {
@@ -48,14 +49,17 @@ export default class AdminDashboardBuilder {
                                 visitDateQ = FormUtil.findFormPartByIndex(doc.form, visDateIndex);
                                 doc.form.visitDate = moment(visitDateQ.input).format("MMM DD YYYY");
                             }
-
                             doc.form.dateSubmitted = moment(doc.form.status[doc.form.status.length - 1].date).format("MMM DD YYYY");
                             const firstOpenStatus = doc.form.status.find((status:any) => {
-                                return status.value === 'open'
+                                return status.value === 'submitted'
                             });
+                            if (firstOpenStatus === undefined) {
+                                console.log(doc.form.status)
+                            }
                             doc.form.os = firstOpenStatus.username;
                             return doc;
                         })
+                        console.log(visitsForDisplay);
                         queuedVisits = queuedVisits.concat(visitsForDisplay);
                     }
                 }
@@ -66,7 +70,6 @@ export default class AdminDashboardBuilder {
 
     public buildDashboard() {
         return this.getVisits().then(queuedVisits => {
-     
             return queuedVisits;
         })
     }
