@@ -67,13 +67,17 @@ export default class OsViewVisitBuilder {
     getVisitViewData() {
         if (this.formID.startsWith('54blankForm')) {
            return this.getNewVisitPrevVisitPair().then(visitPair => {
-               try {
+               const notCorrectedForm = visitPair.prevVisit.form.contents.find((content: any) => {return content.key === 'Score too high'})
+               if (notCorrectedForm === undefined) {
                    if(visitPair.prevVisit && FormUtil.isCompressed(visitPair.prevVisit)) {
                        visitPair.prevVisit = FormUtil.expand(visitPair.templateForm, visitPair.prevVisit);
                    }
-               } catch (err) {
+               } else {
                    visitPair.prevVisit = null;
                }
+
+
+
 
 
                 // const compressedBlankForm = FormUtil.compress(visitPair.newVisit.form);
