@@ -15,7 +15,7 @@ export default class OsViewVisitBuilder {
     }
 
     getNewVisitPrevVisitPair() {
-        return Promise.all([this.combineOsVisitsOfCurrentType(), this.currentVisitTemplate(), this.uncompressedPrevVisitFromArchive()]).then(([osVisits, visitTemplate, archivedPrevVisit]) => {
+        return Promise.all([this.combineOsVisitsOfCurrentType(), this.currentVisitTemplate()/*, this.uncompressedPrevVisitFromArchive()*/]).then(([osVisits, visitTemplate/*, archivedPrevVisit */]) => {
             const result: any = {};
             result.success = true;
             result.visit = visitTemplate;
@@ -23,7 +23,7 @@ export default class OsViewVisitBuilder {
             if ( osVisits.length > 0) {
                 result.prevVisit = osVisits[0]
             } else {
-                result.prevVisit = archivedPrevVisit;
+                result.prevVisit = null;
             }
             return result;
         }).catch(err => {

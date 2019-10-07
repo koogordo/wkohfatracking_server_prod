@@ -121,8 +121,87 @@ export default class FormUtil {
             } else {
                 return 0;
             }
-
         })
+    }
+
+    public static makeArchiveDocFromFormDoc(form: IVisit) {
+        const archiveDoc: any = {};
+        archiveDoc._id = form._id;
+        archiveDoc.visitRev;
+        archiveDoc.client = form.form.client;
+        archiveDoc.visitType = form.form.name;
+
+
+        //recursively build archiveDoc
+        return archiveDoc;
+    }
+
+    public static makeArchiveDoc(form: any, archiveDoc: any) {
+        if (form.tabs) {
+            for (const tabControl of form.tabs) {
+                this.makeArchiveDoc(tabControl, archiveDoc);
+            }
+        } else if (form.sections) {
+            for (const sectionControl of form.sections) {
+                this.makeArchiveDoc(sectionControl, archiveDoc);
+            }
+        } else if (form.rows && form.type === "question-array") {
+            // (form as form).addControl('initialLoad', new FormControl(true));
+
+            for (const inputControl of form.controls.input.controls) {
+                for (const rowControl of inputControl.rows) {
+                    this.makeArchiveDoc(rowControl, archiveDoc);
+                }
+            }
+        } else if (form.rows && form.type !== "question-array") {
+            for (const rowControl of form.rows) {
+                this.makeArchiveDoc(rowControl, archiveDoc);
+            }
+        } else if (form.columns) {
+            for (const columnControl of form.columns) {
+
+                this.makeArchiveDoc(columnControl, archiveDoc);
+            }
+        } else if (form.options) {
+            for (const optionControl of form.options) {
+                this.makeArchiveDoc(optionControl, archiveDoc);
+            }
+        } else if (form.questions) {
+            form.questions.forEach((question: any) => {
+                if (question.key === "Income") {
+                    let compressValue;
+                    if (question.indices.yearly && question.indices.yearly !== "") {
+                        compressValue = `yearly ${question.indices.yearly}`;
+                    } else if (question.indices.monthly && question.indices.monthly !== "") {
+                        compressValue = `monthly ${question.indices.monthly}`;
+                    } else if (question.indices.weekly && question.indices.weekly !== "") {
+                        compressValue = `weekly ${question.indices.weekly}`;
+                    } else {
+                        compressValue = "";
+                    }
+                   archiveDoc[question.key] = compressValue;
+                } else {
+                   archiveDoc[question.key] = question.input;
+                }
+                if (question.options) {
+                    for (const optionControl of question.options) {
+                        if (optionControl.rows.length > 0) {
+                            this.makeArchiveDoc(optionControl, archiveDoc);
+                        }
+                    }
+                } else if (question.rows && question.type === "question-array") {
+                    for (const inputControl of question.input) {
+                        for (const rowControl of inputControl.rows) {
+                            this.makeArchiveDoc(rowControl, archiveDoc);
+                        }
+                    }
+                } else if (question.rows && question.type !== "question-array") {
+                    for (const rowControl of question.rows) {
+                        this.makeArchiveDoc(rowControl, archiveDoc);
+                    }
+                }
+            });
+        }
     }
 
     public static compress(form: any, compressedForm: any = {}): any {
@@ -156,7 +235,7 @@ export default class FormUtil {
             }
         } else if (form.columns) {
             for (const columnControl of form.columns) {
-            
+
                 this.compress(columnControl, compressedForm);
             }
         } else if (form.options) {
@@ -220,13 +299,12 @@ export default class FormUtil {
                 formCopy.form[prop] = compressedForm.form[prop];
             }
         }
-        console.log("in expand");
+
         for (const question of compressedForm.form.contents) {
-            console.log(formCopy);
+            console.log(question.key);
             const index = this.indexQuestionGroup(formCopy.form, question.key);
             const formPart = this.findFormPartByIndex(formCopy.form, index);
             if (question.key === "Income") {
-
                 const income = question.value.split(" ");
                 if (income[0] === "yearly") {
                     formPart.indices.yearly = income[1];
@@ -241,7 +319,6 @@ export default class FormUtil {
             formPart.notes = question.notes;
             formPart.usePreviousValue = question.usePreviousValue;
         }
-        console.log("outside question loop");
         formCopy._id = compressedForm._id;
         formCopy._rev = compressedForm._rev;
         return formCopy;
