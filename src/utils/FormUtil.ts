@@ -301,7 +301,6 @@ export default class FormUtil {
         }
 
         for (const question of compressedForm.form.contents) {
-            console.log(question.key);
             const index = this.indexQuestionGroup(formCopy.form, question.key);
             const formPart = this.findFormPartByIndex(formCopy.form, index);
             if (question.key === "Income") {

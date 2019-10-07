@@ -23,9 +23,7 @@ VisitController.post("/viewvisit", [checkJwt], (req: Request, res: Response) => 
 
     const osViewVisitBuilder = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
     osViewVisitBuilder.makeDisplayVisit().then((visit) => {
-
         res.status(200).json(visit)
-        console.log(visit);
     }).catch(err => {
         res.status(400).json({err});
     })
