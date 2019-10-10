@@ -20,8 +20,7 @@ AuthController.post("/login", (req, res) => {
         }
         const token = jwt.sign(
             { roles: user.roles, username: user._id },
-            jwtSecret,
-            { expiresIn: "1h" }
+            jwtSecret
         );
 
         //Send the jwt in the response

@@ -80,7 +80,6 @@ export default class OsViewVisitBuilder {
             return this.dao.visits(this.userDBName).find(this.formID).then((currentVisit: IVisit) => {
                     return this.getFormTemplate(currentVisit.form.name).then((templateDoc: IBlankForm) => {
                         let visit;
-                      
                         if (FormUtil.isCompressed(currentVisit)) {
                             visit = FormUtil.expand(templateDoc, currentVisit);
                         } else {
@@ -88,7 +87,6 @@ export default class OsViewVisitBuilder {
                         }
                         return {success: true, visit}
                     });
-
             }).catch(err => {throw err});
         }
     }
