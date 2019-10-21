@@ -22,43 +22,43 @@ export class DashData {
             username: this.user,
         };
     }
-    public mergeNotification(data: IWKONotification) {
-        
-        if (this.userType === "os") {
-            this.makeOsNotifyChanges(data);
-        } else if (this.userType === "reviewer") {
-            this.makeReviewerNotifyChanges(data);
-        }
-    }
-    private makeReviewerNotifyChanges(data: IWKONotification) {
-        const changeToForm = data.newForm;
-     
-        const client = this.findClientInReviewer(data.changedBy.split(":")[1], changeToForm.form.client);
+    // public mergeNotification(data: IWKONotification) {
+    //
+    //     if (this.userType === "os") {
+    //         this.makeOsNotifyChanges(data);
+    //     } else if (this.userType === "reviewer") {
+    //         this.makeReviewerNotifyChanges(data);
+    //     }
+    // }
+    // private makeReviewerNotifyChanges(data: IWKONotification) {
+    //     const changeToForm = data.newForm;
+    //
+    //     const client = this.findClientInReviewer(data.changedBy.split(":")[1], changeToForm.form.client);
+    //
+    //     if (client) {
+    //         // tslint:disable-next-line: max-line-length
+    //         const allForms = client.forms.TransitionForms.concat(client.forms.ReviewForms.concat(client.forms.CompleteForms));
+    //
+    //         const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
+    //         const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
+    //         this.deleteOldForm(client, oldStatus, data.newForm._id, "fromReviewer");
+    //         this.addNewForm(client, newStatus, data.newForm, "fromReviewer");
+    //     }
+    // }
 
-        if (client) {
-            // tslint:disable-next-line: max-line-length
-            const allForms = client.forms.TransitionForms.concat(client.forms.ReviewForms.concat(client.forms.CompleteForms));
-        
-            const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
-            const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
-            this.deleteOldForm(client, oldStatus, data.newForm._id, "fromReviewer");
-            this.addNewForm(client, newStatus, data.newForm, "fromReviewer");
-        }
-    }
-
-    private makeOsNotifyChanges(data: IWKONotification) {
-        const changeToForm = data.newForm;
-        const client = this.findClientInOs(changeToForm.form.client);
-
-        if (client) {
-            const allForms = client.forms.TransitionForms.concat(client.forms.ActiveForms.concat(client.forms.LockedForms));
-     
-            const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
-            const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
-            this.deleteOldForm(client, oldStatus, data.newForm._id, "fromOS");
-            this.addNewForm(client, newStatus, data.newForm, "fromOS");
-        }
-    }
+    // private makeOsNotifyChanges(data: IWKONotification) {
+    //     const changeToForm = data.newForm;
+    //     const client = this.findClientInOs(changeToForm.form.client);
+    //
+    //     if (client) {
+    //         const allForms = client.forms.TransitionForms.concat(client.forms.ActiveForms.concat(client.forms.LockedForms));
+    //
+    //         const oldStatus = this.getOldFormStatus(allForms, data.newForm._id);
+    //         const newStatus = data.newForm.form.status[data.newForm.form.status.length - 1].value;
+    //         this.deleteOldForm(client, oldStatus, data.newForm._id, "fromOS");
+    //         this.addNewForm(client, newStatus, data.newForm, "fromOS");
+    //     }
+    // }
 
     private getOldFormStatus(forms: any, changeToForm: any) {
         // tslint:disable-next-line: forin
