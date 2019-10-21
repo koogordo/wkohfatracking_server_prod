@@ -14,17 +14,23 @@ AuthController.post("/login", (req, res) => {
     if (!(username && password)) {
         res.status(400).json({err: "Invalid login request body", body: req.body});
     }
+    console.log(username, password);
     dao.users().find(username).then(user => {
-        if(!bcrypt.compareSync(password, user.apipassword)){
-            res.status(400).json({err: "Password Incorrect"});
-        }
-        const token = jwt.sign(
-            { roles: user.roles, username: user._id },
-            jwtSecret
-        );
+        try {
+            if(!bcrypt.compareSync(password, user.apipassword)){
+                res.status(400).json({err: "Password Incorrect"});
+            }
+            const token = jwt.sign(
+                { roles: user.roles, username: user._id, password },
+                jwtSecret
+            );
 
-        //Send the jwt in the response
-        res.status(200).json({success: true, user: user, token});
+            //Send the jwt in the response
+            res.status(200).json({success: true, user: user, token});
+        } catch(e) {
+            res.status(400).json(e);
+        }
+
     }).catch(err => {
         if(err.error === 'not_found') {
             res.status(400).json({err: "Username Incorrect"})

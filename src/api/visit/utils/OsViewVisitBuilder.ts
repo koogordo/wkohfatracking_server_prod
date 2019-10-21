@@ -1,7 +1,7 @@
 import {WKODbAccess} from "../../../data/WKODbAccess";
 import {IBlankForm, IUser, IVisit} from "../../../data/Repository";
 import FormUtil from "../../../utils/FormUtil";
-
+const pouchCollate = require('pouchdb-collate');
 export default class OsViewVisitBuilder {
     private dao: WKODbAccess;
     private formID: string;
@@ -135,11 +135,15 @@ export default class OsViewVisitBuilder {
                 return orderedForms;
             }).catch( err => {throw err})
         }).catch(err => {throw err});
-
     }
     uncompressedPrevVisitFromArchive() {
         return Promise.all([this.currentVisitName(), this.currentVisitTemplate()]).then(([currentVisitName, currentVisitTemplate]) => {
-            return this.dao.archive().query("archiveFormsDesign/byClientAndName", {include_docs:true, key: [this.clientID, currentVisitName]}).then(payload => {
+            return this.dao.archive().query("archiveFormsDesign/byClientAndName",
+                {
+                    include_docs:true,
+                    key: [this.clientID, currentVisitName]
+                }).then(payload => {
+
                 const visitDocs = payload.rows.filter((row: any) => {
                     return row.doc._id !== this.formID
                 }).map((row: any) => {
@@ -160,7 +164,6 @@ export default class OsViewVisitBuilder {
     }
     combineOsVisitsOfCurrentType() {
         return Promise.all([this.osNames(), this.currentVisitName(), this.currentVisitTemplate()]).then(([osNames, visitName, visitTemplate]) => {
-
             const osAllDocPromises: Promise<any>[] = []
             osNames.forEach((name: any) => {
                 osAllDocPromises.push(this.dao.visits(name).findAll({include_docs: true}).then(payload => {
@@ -170,14 +173,12 @@ export default class OsViewVisitBuilder {
                                 (row.doc.form.name === visitName) &&
                                 (row.doc._id !== this.formID) &&
                                 (!row.doc._id.startsWith("54blankForm")) &&
-                                (row.doc.form.client === this.clientID) &&
-                                (row.doc.form.status[row.doc.form.status.length - 1].value !== 'open')
+                                (row.doc.form.client === this.clientID)
                             );
                         }
                     }).map((row: any) => {
                         return row.doc;
                     })
-
                     return visitDocs;
                 }).catch(err => {
                     return err;
@@ -188,7 +189,44 @@ export default class OsViewVisitBuilder {
                 allDocsOfeachOs.forEach(osVisits => {
                     visitsResult = visitsResult.concat(osVisits);
                 })
+                const orderedForms = FormUtil.orderFormsByDate(visitsResult);
+                return orderedForms.map(doc => {
+                    if (FormUtil.isCompressed(doc)) {
+                        return FormUtil.expand(visitTemplate, doc)
+                    } else {
+                        return doc
+                    }
+                });
+            }).catch(err => {throw err})
+        }).catch(err => {throw err})
+    }
 
+    combineOsVisitsOfCurrentTypeIncludeCurrentID() {
+        return Promise.all([this.osNames(), this.currentVisitName(), this.currentVisitTemplate()]).then(([osNames, visitName, visitTemplate]) => {
+            const osAllDocPromises: Promise<any>[] = []
+            osNames.forEach((name: any) => {
+                osAllDocPromises.push(this.dao.visits(name).findAll({include_docs: true}).then(payload => {
+                    const visitDocs = payload.rows.filter((row: any) => {
+                        if (!row.doc._id.startsWith('_design') && !row.doc._id.startsWith('clients')) {
+                            return (
+                                (row.doc.form.name === visitName) &&
+                                (!row.doc._id.startsWith("54blankForm")) &&
+                                (row.doc.form.client === this.clientID)
+                            );
+                        }
+                    }).map((row: any) => {
+                        return row.doc;
+                    })
+                    return visitDocs;
+                }).catch(err => {
+                    return err;
+                }));
+            })
+            let visitsResult: any[] = []
+            return Promise.all(osAllDocPromises).then(allDocsOfeachOs => {
+                allDocsOfeachOs.forEach(osVisits => {
+                    visitsResult = visitsResult.concat(osVisits);
+                })
                 const orderedForms = FormUtil.orderFormsByDate(visitsResult);
                 return orderedForms.map(doc => {
                     if (FormUtil.isCompressed(doc)) {
@@ -204,11 +242,26 @@ export default class OsViewVisitBuilder {
         if (this.formID.startsWith("54blankForm")) {
             return this.dao.forms().find(this.formID).then(doc => {
                 return doc.form.name;
-            }).catch( err => {throw err})
+            }).catch( err => {
+                throw err;
+            })
         } else {
             return this.dao.visits(this.userDBName).find(this.formID).then(doc => {
                 return doc.form.name;
-            }).catch(err => {throw err})
+            }).catch(err => {
+                if (err.error === 'not_found' && err.reason === 'deleted') {
+                    const parsedVisitID = pouchCollate.parseIndexableString(decodeURI(this.formID));
+                    return this.dao.forms().findAll({include_docs:true}).then(payload => {
+                        return payload.rows.filter((row:any) => {
+                            if (row.doc._id.startsWith('_design')) {
+                                return false;
+                            }
+                            return row.doc.form.name === parsedVisitID[4]
+                        }).map((row:any) => {return row.doc})[0].form.name
+                    })
+                }
+                throw err
+            })
         }
     }
 
@@ -216,13 +269,29 @@ export default class OsViewVisitBuilder {
         if (this.formID.startsWith("54blankForm")) {
             return this.dao.forms().find(this.formID).then(doc => {
                 return doc;
-            }).catch(err => {throw err})
+            }).catch(err => {
+                throw err})
         } else {
             return this.dao.visits(this.userDBName).find(this.formID).then(doc => {
                 return this.dao.forms().find(doc.form.formID).then(doc => {
                     return doc;
-                }).catch(err => {throw err})
-            }).catch(err => {throw err})
+                }).catch(err => {
+                    throw err
+                })
+            }).catch(err => {
+                if (err.error === 'not_found' && err.reason === 'deleted') {
+                    const parsedVisitID = pouchCollate.parseIndexableString(decodeURI(this.formID));
+                    return this.dao.forms().findAll({include_docs:true}).then(payload => {
+                        return payload.rows.filter((row:any) => {
+                            if (row.doc._id.startsWith('_design')) {
+                                return false;
+                            }
+                            return row.doc.form.name === parsedVisitID[4]
+                        }).map((row:any) => {return row.doc})[0]
+                    })
+                }
+                throw err
+            })
         }
     }
     osNames() {
@@ -232,7 +301,9 @@ export default class OsViewVisitBuilder {
             }).map((row:any)=> {
                 return row.doc.name
             })
-        }).catch(err => {throw err})
+        }).catch(err => {
+            throw err;
+        })
     }
 
     private expandForms(visitData: any) {

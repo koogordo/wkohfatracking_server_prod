@@ -23,10 +23,11 @@ export interface IWKORequest {
 }
 
 export interface IWKONotification {
-    newForm: any;
     changedBy: string;
-    timestamp: string;
-    newStatus: string;
+    updateDate: string;
+    uts: number;
+    updatedClients: any[];
+    notifyGroup: any;
 }
 
 export interface IWKODashboardData {

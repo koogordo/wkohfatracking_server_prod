@@ -1,8 +1,9 @@
 import {WKODbAccess} from "../../../data/WKODbAccess";
 import {BehaviorSubject} from "rxjs";
-import {IOsClients} from "../../../data/Repository";
+import {IForm, IOsClients, IVisit} from "../../../data/Repository";
 const pouchCollate = require("pouchdb-collate");
 import moment from "moment"
+import OsViewVisitBuilder from "../../visit/utils/OsViewVisitBuilder";
 export default class OsDashboardBuilder {
     private dao: WKODbAccess;
     private username: string;
@@ -53,31 +54,76 @@ export default class OsDashboardBuilder {
 
         }).catch((err) => {return err});
     }
+    getClientPreviousForms(clientID: any) {
+        return this.dao.forms().findAll({include_docs: true}).then(allForms => {
+            const forms = allForms.rows.filter((row: any) => {
+                if (!row || row.id.startsWith('_design')) {
+                    return false;
+                }
+                return true;
+            }).map((row: any) => {return row.doc});
+            const prevVisitPromises: any = [];
+
+            forms.forEach((form: any) => {
+                let viewVisitBuilder;
+                if (form && form._id) {
+                    viewVisitBuilder = new OsViewVisitBuilder(this.dao, this.userDBName, form._id, clientID);
+                } else {
+                    throw new Error('Not a valid form, no id present.');
+                }
+                prevVisitPromises.push(
+                    Promise.all([viewVisitBuilder.combineOsVisitsOfCurrentType(), viewVisitBuilder.uncompressedPrevVisitFromArchive()]).then(([activeVisits, archivedVisit]) => {
+                        if (activeVisits && activeVisits.length > 0) {
+                            return activeVisits[0];
+                        } else if (archivedVisit) {
+                            return archivedVisit
+                        }
+                        return null;
+                    })
+                )
+                viewVisitBuilder = null;
+            });
+
+            return Promise.all(prevVisitPromises).then(prevVisits => {
+                return prevVisits;
+            })
+        })
+    }
     buildChild(child: any, famId: string, childNum: any) {
-        return this.getClientForms(child.clientID).then(forms => {
+        return Promise.all([this.getClientForms(child.clientID)]).then(([forms]) => {
             const tempChild = {
                 clientFName: child.clientFName,
                 clientLName: child.clientLName,
                 clientType: "child",
                 terminated: child.terminated !== undefined ? child.terminated : false,
                 clientID: child.clientID || encodeURI(pouchCollate.toIndexableString([famId, "child", childNum])),
-                forms: forms
+                forms: forms,
+                previousVisits: child.previousVisits
             }
+
+            // const previousVisits: any = {};
+            // prevVisitsByType.forEach((visit: any) => {
+            //     previousVisits[visit.form.name] = visit;
+            // })
+            // tempChild.previousVisits = previousVisits;
+            // console.log('Child', tempChild)
             return tempChild;
-        })
+        });
     }
     buildAdult(adult: any, famId: string, adultNum: any) {
-        return this.getClientForms(adult.clientID).then(forms => {
+        return Promise.all([this.getClientForms(adult.clientID)]).then(([forms]) => {
             const tempAdult = {
                 clientFName: adult.clientFName,
                 clientLName: adult.clientLName,
                 clientType: "adult",
                 terminated: adult.terminated !== undefined ? adult.terminated : false,
                 clientID: adult.clientID || encodeURI(pouchCollate.toIndexableString([famId, "adult", adultNum])),
-                forms: forms
+                forms: forms,
+                previousVisits: adult.previousVisits
             }
+
             return tempAdult;
-        })
+        });
     }
     buildFamily(family: any) {
         const adultPromises = [];
@@ -104,7 +150,6 @@ export default class OsDashboardBuilder {
                     tempDashFamily.child.push(client);
                 }
             }
-
             return tempDashFamily;
         }).catch(err => {
             return err
@@ -116,7 +161,6 @@ export default class OsDashboardBuilder {
             const familyBuilds = families.map(family => { return this.buildFamily(family)});
 
             return Promise.all(familyBuilds).then(osFamilies => {
-
                 return osFamilies;
             }).catch( err => { return err})
         }).catch(err => {

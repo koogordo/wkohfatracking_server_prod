@@ -51,6 +51,52 @@ VisitController.post("/prevvisits", [checkJwt],(req: Request, res: Response) => 
         })
     })
 })
+
+VisitController.post('/previousarchivedvisit', [checkJwt], (req: Request, res: Response) => {
+
+    if (!req.body.id) {
+        res.status(400).json({err: `Missing request params "id"`, body: req.body})
+    }
+    if (!req.body.userDBName) {
+        res.status(400).json({err: `Missing request body value "userDBName"`, body: req.body})
+    }
+    if (!req.body.clientID) {
+        res.status(400).json({err: `Missing request body value "clientID"`, body: req.body})
+    }
+
+    const osViewVisitBuilder = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
+    osViewVisitBuilder.uncompressedPrevVisitFromArchive().then(archivedPrevVisit => {
+        res.status(200).json({newPrevVisit: archivedPrevVisit});
+    }).catch(err => {
+        console.log(err);
+        res.status(400).json({
+            ok: false,
+            err
+        })
+    })
+});
+
+VisitController.post('/previousactivevisit', [checkJwt], (req: Request, res: Response) => {
+
+    if (!req.body.id) {
+        res.status(400).json({err: `Missing request params "id"`, body: req.body})
+    }
+    if (!req.body.userDBName) {
+        res.status(400).json({err: `Missing request body value "userDBName"`, body: req.body})
+    }
+    if (!req.body.clientID) {
+        res.status(400).json({err: `Missing request body value "clientID"`, body: req.body})
+    }
+    const osViewVisitBuilder = new OsViewVisitBuilder(dao, req.body.userDBName, req.body.id, req.body.clientID);
+    osViewVisitBuilder.combineOsVisitsOfCurrentTypeIncludeCurrentID().then(visitOfType => {
+        res.status(200).json({newPrevVisit: visitOfType[0]});
+    }).catch(err => {
+        res.status(400).json({
+            ok: false,
+            err
+        })
+    })
+})
 // VisitController.post("/question", (req: Request, res: Response) => {
 //     const key = req.body.key;
 //     const formID = req.body.formID;

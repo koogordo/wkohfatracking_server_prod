@@ -34,21 +34,26 @@ export class ClientSession {
             const wkoMessage: IWKOMessage = data as IWKOMessage;
             this.handleMessage(wkoMessage);
         });
-        this.socket.on(CommEvent.REQUEST, (data: any) => {
-          
-            const wkoFormUpdate: IWKORequest = data as IWKORequest;
-            this.handleRequest(wkoFormUpdate);
-        });
-        this.socket.on(CommEvent.DASHBOARD_DATA_PASS, (data: IWKODashboardData) => {
-         
-            if (!this.dashData) {
-                this.dashData = new DashData(data.data, data.username, data.userType);
-                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
-            } else {
-                this.dashData.setData(data.data);
-                this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
-            }
-        });
+        // this.socket.on(CommEvent.REQUEST, (data: any) => {
+        //
+        //     const wkoFormUpdate: IWKORequest = data as IWKORequest;
+        //     this.handleRequest(wkoFormUpdate);
+        // });
+        // this.socket.on(CommEvent.DASHBOARD_DATA_PASS, (data: IWKODashboardData) => {
+        //
+        //     if (!this.dashData) {
+        //         this.dashData = new DashData(data.data, data.username, data.userType);
+        //         this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+        //     } else {
+        //         this.dashData.setData(data.data);
+        //         this.socket.emit(CommEvent.DASHBOARD_DATA_PASS, this.dashData.toIWKODashData());
+        //     }
+        // });
+
+        this.socket.on(CommEvent.NOTIFICATION, (notification: IWKONotification) => {
+            // TODO handle the update notification
+            this.notifyRelevantUsers(notification);
+        })
     }
 
     private handleMessage(data: IWKOMessage): void {
@@ -59,84 +64,88 @@ export class ClientSession {
         }
     }
 
-    private handleRequest(data: IWKORequest): void {
-        // TODO do something with the form update;
-        switch (data.action) {
-            case "update":
-                this.doUpdate(data);
-                break;
-            case "save":
-                this.doDelete(data);
-                break;
-            case "notify":
-                this.notifyRelevantUsers(data);
-                break;
-            case "get-dash-data":
-           
-                this.passDashboardData(data);
-            default: {
-                break;
-            }
-        }
-    }
-    private doUpdate(req: IWKORequest) {
-        this.dao
-            .visits(req.userDB)
-            .update(req.visit)
-            .then((res) => {
-                // TODO server response
-                if (req.doNotify) {
-                    this.notifyRelevantUsers(req);
-                }
-            })
-            .catch((err) => {
-                const s = this.dispatch.findSession(req.reqUser);
-           
-                if (s) {
-                    s.getSocket().emit(CommEvent.REQ_ERR, err);
-                }
-            });
-    }
+    // private handleRequest(data: IWKORequest): void {
+    //     // TODO do something with the form update;
+    //     switch (data.action) {
+    //         case "update":
+    //             this.doUpdate(data);
+    //             break;
+    //         case "save":
+    //             this.doDelete(data);
+    //             break;
+    //         case "notify":
+    //             this.notifyRelevantUsers(data);
+    //             break;
+    //         case "get-dash-data":
+    //
+    //             this.passDashboardData(data);
+    //         default: {
+    //             break;
+    //         }
+    //     }
+    // }
+    // private doUpdate(req: IWKORequest) {
+    //     this.dao
+    //         .visits(req.userDB)
+    //         .update(req.visit)
+    //         .then((res) => {
+    //             // TODO server response
+    //             if (req.doNotify) {
+    //                 this.notifyRelevantUsers(req);
+    //             }
+    //         })
+    //         .catch((err) => {
+    //             const s = this.dispatch.findSession(req.reqUser);
+    //
+    //             if (s) {
+    //                 s.getSocket().emit(CommEvent.REQ_ERR, err);
+    //             }
+    //         });
+    // }
 
-    private doDelete(req: IWKORequest) {
-        this.dao
-            .visits(req.reqUser)
-            .delete(req.visit._id)
-            .then((res) => {
-                // TODO server response
-                this.notifyRelevantUsers(req);
-            })
-            .catch((err) => {
-                const s = this.dispatch.findSession(req.reqUser);
-                if (s) {
-                    s.getSocket().emit(CommEvent.REQ_ERR, err);
-                }
-            });
-    }
+    // private doDelete(req: IWKORequest) {
+    //     this.dao
+    //         .visits(req.reqUser)
+    //         .delete(req.visit._id)
+    //         .then((res) => {
+    //             // TODO server response
+    //             this.notifyRelevantUsers(req);
+    //         })
+    //         .catch((err) => {
+    //             const s = this.dispatch.findSession(req.reqUser);
+    //             if (s) {
+    //                 s.getSocket().emit(CommEvent.REQ_ERR, err);
+    //             }
+    //         });
+    // }
 
-    private notifyRelevantUsers(data: IWKORequest) {
+    private notifyRelevantUsers(notification: IWKONotification) {
         this.dao
             .users()
             .findAll({include_docs: true})
             .then((payload) => {
-                payload.rows
-                    .filter((row: any) => {
-                        return row.doc.reviewGroup === data.notifyGroup && !row.doc._id.startsWith("_design");
-                    })
-                    .map((row: any) => {
-                        return row.doc._id;
-                    })
-                    .forEach((username: string) => {
-                        const s = this.dispatch.findSession(username);
-                        const notification: IWKONotification = {
-                            changedBy: data.reqUser,
-                            newForm: data.visit,
-                            newStatus: data.visit.form.status[data.visit.form.status.length - 1],
-                            timestamp: Date.now().toString(),
-                        };
-                        // this.dashData.mergeNotification(notification);
+                let notifyUsers;
+                if (notification.notifyGroup === 'ALL') {
+                    notifyUsers = payload.rows.map((row: any) => {
+                        return row.doc.name
+                    }).filter((name: any) => {
+                        return name !== notification.changedBy
+                    });
+                } else {
+                    notifyUsers = payload.rows
+                        .filter((row: any) => {
+                            return (row.doc.reviewGroup === notification.notifyGroup || row.doc.reviewGroup === 'ALL') &&
+                                !row.doc._id.startsWith("_design") &&
+                                row.doc.name !==  notification.changedBy
+                        })
+                        .map((row: any) => {
+                            return row.doc.name;
+                        });
+                }
+
+                    notifyUsers.forEach((username: string) => {
+                        const s = this.dispatch.findSession(`org.couchdb.user:${username}`);
                         if (s) {
-                            
                             const sock = s.getSocket();
                             sock.emit(CommEvent.NOTIFICATION, notification);
                         }

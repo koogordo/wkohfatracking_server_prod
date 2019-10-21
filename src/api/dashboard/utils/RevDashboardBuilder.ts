@@ -23,7 +23,6 @@ export default class RevDashboardBuilder {
     }
     getOsesInRevGroup() {
         return this.getReviewGroup().then(reviewGroup => {
-            console.log(reviewGroup)
             if (reviewGroup !== 'ALL') {
                 return this.dao.users().query("review_groups/byReviewGroup", { include_docs: true, key: reviewGroup || "R1" }).then(payload => {
                     return this.makeOsesUnique(payload);
