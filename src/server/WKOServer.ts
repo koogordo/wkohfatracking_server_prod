@@ -10,12 +10,12 @@ import DashboardController from "../api/dashboard/DashboardController";
 import AuthController from "../api/authentication/AuthController";
 import UserController from "../api/user/UserController"
 import VisitController from "../api/visit/VisitController";
+import ArchiveController from "../api/archive/ArichiveController"
 export class WKOServer {
     private server!: Server;
     private app!: express.Application;
     private config!: IAppConfig;
     private socketServer!: WKOSocket;
-
     constructor(config: IAppConfig) {
         this.configure(config);
         this.createApp();
@@ -58,6 +58,7 @@ export class WKOServer {
         this.app.use("/auth", AuthController);
         this.app.use("/user", UserController);
         this.app.use("/visit", VisitController);
+        this.app.use("/archive", ArchiveController);
     }
 }
 

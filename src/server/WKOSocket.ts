@@ -3,18 +3,20 @@ import { createServer, Server } from "http";
 import { ClientSession } from "./ClientSession";
 import { WKODbAccess } from "../data/WKODbAccess";
 import { IdbConfig } from "../data/Database";
+import {IWKOVisitEditPermission} from "./WKOCommunication";
 export class WKOSocket {
     private static ID = 0;
     private io!: socketIo.Server;
     private dboConfig!: IdbConfig;
     private connections!: Map<string, ClientSession>;
-
+    private _visitEditPermissionsList!: any[];
     constructor(server: Server) {
         const allowedOrigins = "*:*";
         this.io = socketIo.listen(server, { origins: allowedOrigins });
         this.socketMiddleware();
         this.listenIncoming();
         this.connections = new Map();
+        this._visitEditPermissionsList = [];
     }
     public socketInstance() {
         return this.io;
@@ -32,6 +34,21 @@ export class WKOSocket {
         } else {
             return null;
         }
+    }
+    public registerPermission(permission: IWKOVisitEditPermission) {
+        this._visitEditPermissionsList.push(permission);
+    }
+    public unregisterPermission(permission: IWKOVisitEditPermission) {
+        const delIndex = this._visitEditPermissionsList.findIndex(p => {
+            return p.token === permission.token;
+        })
+        if (delIndex > -1) {
+            this._visitEditPermissionsList.splice(delIndex, 1);
+        }
+        console.log(this._visitEditPermissionsList);
+    }
+    public visitEditPermisionsList() {
+        return this._visitEditPermissionsList;
     }
     private listenIncoming(): void {
         this.io.on("connect", (socket: socketIo.Socket) => {
