@@ -206,7 +206,6 @@ export class ClientSession {
                         const sock = s.getSocket();
                         sock.emit(CommEvent.VISIT_STATUS_UPDATE, notification);
                     } else {
-                        console.log("User offline: ", user.name);
                         if (!user.visitChanges) {
                             user.visitChanges = [notification]
                         } else {
@@ -270,7 +269,6 @@ export class ClientSession {
     }
 
     handleSynch(request: any) {
-        console.log(request);
         this.runSyncProcess(request);
     }
 
