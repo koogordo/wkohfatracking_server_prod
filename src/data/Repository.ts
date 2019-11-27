@@ -73,6 +73,7 @@ export interface IUser {
     roles: string[];
     type: string;
     apipassword: string;
+    visitChanges?: any[];
 }
 export interface IOsClients {
     _id: string;

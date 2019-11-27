@@ -179,55 +179,50 @@ export class ClientSession {
     }
 
     private notifyRelevantUsersOfVisitStatusUpdate(notification: IWKOVisitStatusUpdate) {
-        this.dao
-            .users()
-            .findAll({include_docs: true})
-            .then((payload) => {
-                let notifyUsers;
-                notifyUsers = payload.rows.filter((row: any) => {
-                    if (row.doc._id.startsWith('_design')) {
-                        return false;
-                    } else {
-                        return (row.doc.roles.indexOf('REVIEWER') >= 0 &&
-                            (row.doc.reviewGroup === notification.reviewGroup || notification.reviewGroup === 'ALL' || row.doc.reviewGroup === 'ALL') &&
-                                row.doc.name !== notification.changedBy) ||
-                               (row.doc.roles.indexOf('OS') >= 0 &&
-                                row.doc.name === notification.visitInfo.os &&
-                                row.doc.name !== notification.changedBy)
-                    }
-                }).map((row: any) => {
-                        return row.doc;
-                });
+        this.dao.users().find(`org.couchdb.user:${notification.changedBy}`).then(userMakingNotify => {
+            if (userMakingNotify.roles.indexOf('OS') > -1) {
+               this.dao.users().findAll({include_docs: true}).then(payload => {
+                   const notifyUsers = payload.rows.filter((row: any) => {
+                       if (!row.doc._id.startsWith('_design')) {
+                           return row.doc.name !== notification.changedBy &&
+                               row.doc.roles.indexOf('REVIEWER') > -1 &&
+                               (row.doc.reviewGroup === notification.reviewGroup || row.doc.reviewGroup === 'ALL')
+                       }
+                       return false;
 
-                const userUpdatePromises: any[] = [];
-                notifyUsers.forEach((user: any) => {
-                    const s = this.dispatch.findSession(`org.couchdb.user:${user.name}`);
+                   }).map((row: any) => {
+                       return row.doc.name;
+                   })
+                   notifyUsers.forEach((user: any) => {
+                       const s = this.dispatch.findSession(`org.couchdb.user:${user.name}`);
+                       if (s) {
+                           const sock = s.getSocket();
+                           sock.emit(CommEvent.VISIT_STATUS_UPDATE, notification);
+                       }
+                   });
+               });
+            } else {
+                this.dao.users().find(`org.couchdb.user:${notification.visitInfo.os}`).then(userToNotify => {
+                    const s = this.dispatch.findSession(`org.couchdb.user:${userToNotify.name}`);
                     if (s) {
                         const sock = s.getSocket();
                         sock.emit(CommEvent.VISIT_STATUS_UPDATE, notification);
                     } else {
-                        if (!user.visitChanges) {
-                            user.visitChanges = [notification]
+                        if (!userToNotify.visitChanges) {
+                            userToNotify.visitChanges = [notification]
                         } else {
-                            const existsAtIndex = user.visitChanges.findIndex((visitChange: any) => {return visitChange.visitInfo.visitFormID === notification.visitInfo.visitFormID});
+                            const existsAtIndex = userToNotify.visitChanges.findIndex((visitChange: any) => {return visitChange.visitInfo.visitFormID === notification.visitInfo.visitFormID});
                             if (existsAtIndex > -1) {
-                                user.visitChanges[existsAtIndex] = notification;
+                                userToNotify.visitChanges[existsAtIndex] = notification;
                             } else {
-                                user.visitChanges.push(notification);
+                                userToNotify.visitChanges.push(notification);
                             }
                         }
-                        userUpdatePromises.push(this.dao.users().update(user).then(res => {return res}).catch(err => err));
-                        Promise.all(userUpdatePromises);
-                        // .then(userUpdateReses => {
-                        //     userUpdateReses.forEach(updateRes => {
-                        //         if (!updateRes.ok) {
-                        //
-                        //         }
-                        //     })
-                        // });
+                        this.dao.users().update(userToNotify);
                     }
-                });
-            });
+                })
+            }
+        });
     }
 
     private handleRequestToEdit(request: IWKOVisitEditPermission) {
@@ -285,46 +280,107 @@ export class ClientSession {
             return {ok: false, payload: null};
         }
     }
-    private putDashDeletesOnline(request: IWKOSynchTask) {
-        // return this.offlineStore.get(this.user.getID()).then((offlineDash: OfflineDashboard) => {
-        const deletePromises: any[] = [];
-        request.data.visitsCreatedOffline.forEach((visitUpdateInfo: any, i: number) => {
-            if (visitUpdateInfo.deleted && request.role === "OS") {
-                deletePromises.push(this.dao.visits(request.data._id.split(":")[1]).delete(visitUpdateInfo.visitID).then(removeRes => {
-                    return removeRes;
-                }).catch(err => {
-                    return err;
-                }));
-            }
-        });
+    // private putDashDeletesOnline(request: IWKOSynchTask) {
+    //     // return this.offlineStore.get(this.user.getID()).then((offlineDash: OfflineDashboard) => {
+    //     const deletePromises: any[] = [];
+    //     request.data.visitsCreatedOffline.forEach((visitUpdateInfo: any, i: number) => {
+    //         if (visitUpdateInfo.deleted && request.role === "OS") {
+    //             deletePromises.push(this.dao.visits(request.data._id.split(":")[1]).delete(visitUpdateInfo.visitID).then(removeRes => {
+    //                 return removeRes;
+    //             }).catch(err => {
+    //                 return err;
+    //             }));
+    //         }
+    //     });
+    //
+    //     return Promise.all(deletePromises).then((deletedResults) => {
+    //         return deletedResults;
+    //     }).catch(err => console.log(err));
+    // }
 
-        return Promise.all(deletePromises).then((deletedResults) => {
-            return deletedResults;
-        }).catch(err => console.log(err));
+    private putDashUpdatesOnline(request: IWKOSynchTask, updateVisitPromises: any[] = []) {
+        // return this.offlineStore.get(this.user.getID()).then((offlineDash: OfflineDashboard) => {
+        request.data.visitsCreatedOffline.forEach((visitUpdate: any) => {
+            // if(!visitUpdate.deleted) {
+            //     if (request.role === 'OS') {
+            //         updatedVisits.push(this.putOsUpdates(request.data, visitUpdate));
+            //     } else if (request.role === 'REVIEWER') {
+            //         updatedVisits.push(this.putReviewerUpdates(request.data, visitUpdate));
+            //     }
+            // }
+            const updatedVisit = this.putOsUpdates(request.data, visitUpdate);
+            updateVisitPromises.push(this.dao.visits(request.data._id.split(":")[1]).update(updatedVisit).then(updateRes => { return updateRes;})
+                .catch(err => {
+                if (err.error && err.error === 'conflict') {
+                    return this.resolveUpdateConflict(err, request.data).then(conflictRes => {
+                        return conflictRes;
+                    })
+                }
+            }));
+        });
+        return Promise.all(updateVisitPromises).then(updateVisitPromiseReses => {
+            return updateVisitPromiseReses;
+        })
+        // if (request.role === 'OS') {
+        //     // return this.dao.visits(request.data._id.split(":")[1]).createAll(updatedVisits).then((visitBulkUpdateRes: any) => {
+        //     //     const resolvedUpdates: any[] = [];
+        //     //     visitBulkUpdateRes.forEach((updateRes: any, i: number) => {
+        //     //         if (updateRes.error && updateRes.error === 'conflict') {
+        //     //             resolvedUpdates.push(this.resolveUpdateConflict(updateRes, request.data))
+        //     //             visitBulkUpdateRes.splice(i, 1);
+        //     //         }
+        //     //     });
+        //     //
+        //     //     if (resolvedUpdates.length > 0) {
+        //     //         return Promise.all(resolvedUpdates).then(resolvedUpdateReses => {
+        //     //             return visitBulkUpdateRes.concat(resolvedUpdateReses);
+        //     //         })
+        //     //     } else {
+        //     //         return visitBulkUpdateRes
+        //     //     }
+        //     // }).catch((err: any) => console.log(err));
+        //     const updateVisitPromises: any[] = [];
+        //     updatedVisits.forEach(updatedVisit => {
+        //         updateVisitPromises.push(this.dao.visits(request.data._id.split(":")[1]).update(updatedVisit).then(updateRes => { return updateRes;}).catch((err: any) => {
+        //             if (err.error && err.error === 'conflict') {
+        //                 return this.resolveUpdateConflict(err, request.data).then(conflictRes => {
+        //                     return conflictRes;
+        //                 })
+        //             }
+        //         })
+        //         );
+        //     });
+        //     return Promise.all(updateVisitPromises).then(updateVisitPromiseReses => {
+        //         return updateVisitPromiseReses;
+        //     })
+        // } else {
+        //     return Promise.all(updatedVisits).then(updateReses => {
+        //         return updateReses;
+        //     }).catch(err => { console.log(err); });
+        // }
     }
 
-    private putDashUpdatesOnline(request: IWKOSynchTask) {
-        // return this.offlineStore.get(this.user.getID()).then((offlineDash: OfflineDashboard) => {
-        const updatedVisits: any[] = [];
-        request.data.visitsCreatedOffline.forEach((visitUpdate: any) => {
-            if(!visitUpdate.deleted) {
-                if (request.role === 'OS') {
-                    updatedVisits.push(this.putOsUpdates(request.data, visitUpdate));
-                } else if (request.role === 'REVIEWER') {
-                    updatedVisits.push(this.putReviewerUpdates(request.data, visitUpdate));
+    putFamilyUpdatesOnline(request: IWKOSynchTask, familyUpdatePromises: any[] = []) {
+        request.data.updatedFamilies.forEach((familyToUpdate: any) => {
+            const fam = request.data.families.find((family: any) => {
+                return family._id === familyToUpdate._id;
+            })
+            familyUpdatePromises.push(this.dao.families().update(fam).then(res => {return res;}).catch(err => {
+                // const updateFamiliesDeleteIndex = request.data.updatedFamilies.findIndex((familyUpdate: any) => {
+                //     return familyUpdate._id === err.docId;
+                // });
+                if (err.error && err.error === 'conflict') {
+                    return this.resolveFamilyUpdateConflict(err, request.data).then(conflictResolutionRes => {
+                        // request.data.updatedFamilies.splice(updateFamiliesDeleteIndex, 1)
+                        return conflictResolutionRes;
+                    });
                 }
-            }
+            }));
         });
 
-        if (request.role === 'OS') {
-            return this.dao.visits(request.data._id.split(":")[1]).createAll(updatedVisits).then((visitBulkUpdateRes: any) => {
-                return visitBulkUpdateRes;
-            }).catch((err: any) => console.log(err));
-        } else {
-            return Promise.all(updatedVisits).then(updateReses => {
-                return updateReses;
-            }).catch(err => { console.log(err); });
-        }
+        return Promise.all(familyUpdatePromises).then((familyUpdatePromiseReses: any) => {
+            return familyUpdatePromiseReses;
+        });
     }
 
     private  putOsUpdates(offlineDash: any, visitUpdate: any) {
@@ -350,28 +406,51 @@ export class ClientSession {
 
         return this.dao.visits(visitUpdate.os).update(updatedVisit).then(res => { return res; }).catch(err => { return err; });
     }
+    private resolveUpdateConflict(conflictError: any, dashboard: any) {
+        const visitUpdate = dashboard.visitsCreatedOffline.find((visUpdateInfo: any) => {
+            return visUpdateInfo.visitID === conflictError.docId;
+        });
+        const updateVisit = this.putOsUpdates(dashboard, visitUpdate);
+        return this.dao.visits(dashboard._id.split(":")[1]).find(conflictError.docId).then(currentRevision => {
+            updateVisit._rev = currentRevision._rev;
+            return this.dao.visits(dashboard._id.split(":")[1]).update(updateVisit).then(res => {
+                return res;
+            }).catch(err => err)
+        }).catch(err => err)
+    }
+    private resolveFamilyUpdateConflict(conflictError: any, dashboard: any) {
+        const updatedFamily = dashboard.families.find((fam: any) => {
+            return fam._id === conflictError.docId;
+        })
+        return this.dao.families().find(conflictError.docId).then(currentRevFamily => {
+            updatedFamily._rev = currentRevFamily._rev;
+            return this.dao.families().update(updatedFamily).then(res => {
+                return res;
+            }).catch(err => err);
+        }).catch(err => err);
+    }
 
     private runSyncProcess(request: any) {
-        return this.putDashDeletesOnline(request).then((deleteRes: any) => {
-            let deleteOk = false;
-            if (deleteRes.length === 0) {
-                deleteOk = true;
+        return this.putDashUpdatesOnline(request).then((updateRes: any) => {
+            let updateOk = false;
+            if (updateRes.length === 0) {
+                updateOk = true;
             } else {
-                deleteRes.forEach((res: any) => {
+                updateRes.forEach((res: any) => {
                     if (res.ok) {
-                        deleteOk = true;
+                        updateOk = true;
                     } else {
-                        deleteOk = false;
+                        updateOk = false;
                     }
                 });
             }
-            if (deleteOk) {
-                return this.putDashUpdatesOnline(request).then((updateRes: any) => {
+            if (updateOk) {
+                return this.putFamilyUpdatesOnline(request).then((familyUpdateRes: any) => {
                     let updateOk = false;
-                    if (updateRes.length === 0) {
+                    if (familyUpdateRes.length === 0) {
                         updateOk = true;
                     } else {
-                        updateRes.forEach((res: any) => {
+                        familyUpdateRes.forEach((res: any) => {
                             if (res.ok) {
                                 updateOk = true;
                             } else {
@@ -381,51 +460,46 @@ export class ClientSession {
                     }
                     if (updateOk) {
                         return this.updateOfflineDashData(request).then(updatedData => {
-                           this.socket.emit(CommEvent.SYNCH, {data: updatedData, role: request.role} as IWKOSynchTask);
-                        }).catch((err: any) => console.log(err));
-                    } else {
-                        // TODO update error
-                        console.log("THERE WAS AN UPDATE ERROR: ", updateRes);
+                            this.socket.emit(CommEvent.SYNCH, {data: updatedData, role: request.role} as IWKOSynchTask);
+                        }).catch((err: any) => console.log("UPDATE OFFLINE DASH ERR: ", err));
                     }
-
-                }).catch(err => { console.log(err); });
-            } else {
-                // TODO Delete error
+                }).catch(err => {console.log("FAMILY UPDATE ERR: ",err);});
             }
-        }).catch(err => { console.log(err); });
+        }).catch(err => { console.log("DASH UPDATE ERR: ",err); });
     }
 
     updateOfflineDashData(request: any) {
-        const promises = []
-        promises.push(
-            this.dao.forms().findAll({include_docs: true}).then((allDocsPayload: any) => {
-                return allDocsPayload.rows.map((row: any) => {
-                    return row.doc;
-                });
-            })
-        );
-        promises.push(
-            this.dao.users().find(request.data._id).then((doc: any) => {
-                return doc;
-            }).catch(err =>  {throw err;})
-        );
-        if (request.roles === 'OS') {
-            // promises.push(this.getAllOsClients().catch(err => {throw err;}));
-            promises.push(this.buildOsHomePageData(request));
-        } else if (request.roles === 'REVIEWER') {
-            // promises.push(this.getAllRevClients().catch(err => {throw err;}));
-            promises.push(this.buildReviewerHomePageData(request));
-        }
-
-        return Promise.all(promises).then(([forms, user, osClients, homepageData]) => {
-            request.data.forms = forms;
-            request.data.hash = user.apipassword;
-            request.data.user = user;
-            request.data.homePageData = homepageData;
-            request.data.clients = osClients;
-            request.data.updated = moment().format();
-            return request.data;
-        }).catch(err => {throw err; });
+        // const promises = []
+        // promises.push(
+        //     this.dao.forms().findAll({include_docs: true}).then((allDocsPayload: any) => {
+        //         return allDocsPayload.rows.map((row: any) => {
+        //             return row.doc;
+        //         });
+        //     })
+        // );
+        // promises.push(
+        //     this.dao.users().find(request.data._id).then((doc: any) => {
+        //         return doc;
+        //     }).catch(err =>  {throw err;})
+        // );
+        // if (request.roles === 'OS') {
+        //     // promises.push(this.getAllOsClients().catch(err => {throw err;}));
+        //     promises.push(this.buildOsHomePageData(request));
+        // } else if (request.roles === 'REVIEWER') {
+        //     // promises.push(this.getAllRevClients().catch(err => {throw err;}));
+        //     promises.push(this.buildReviewerHomePageData(request));
+        // }
+        //
+        // return Promise.all(promises).then(([forms, user, homepageData]) => {
+        //     console.log(homepageData);
+        //     request.data.forms = forms;
+        //     request.data.hash = user.apipassword;
+        //     request.data.user = user;
+        //     request.data.homePageData = homepageData;
+        //     request.data.updated = moment().format();
+        //     return request.data;
+        // }).catch(err => {throw err; });
+        return this.buildOsHomePageData(request)
     }
 
     buildReviewerHomePageData(request: any) {
@@ -436,9 +510,9 @@ export class ClientSession {
     }
 
     buildOsHomePageData(request: any) {
-        const osDashBuilder = new OsDashboardBuilder(this.dao, request.data._id, request.data_id.split(":")[1], false);
-        return osDashBuilder.buildDashboard().then(clients => {
-            return clients
+        const osDashBuilder = new OsDashboardBuilder(this.dao, request.data._id, request.data._id.split(":")[1], false);
+        return osDashBuilder.buildDashboard().then(dashboard => {
+            return dashboard
         });
     }
 

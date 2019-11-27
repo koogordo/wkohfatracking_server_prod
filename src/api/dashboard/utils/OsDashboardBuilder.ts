@@ -4,6 +4,7 @@ import {IForm, IOsClients, IVisit} from "../../../data/Repository";
 const pouchCollate = require("pouchdb-collate");
 import moment from "moment"
 import OsViewVisitBuilder from "../../visit/utils/OsViewVisitBuilder";
+import {DashBoardData} from "../models/DashBoardData";
 export default class OsDashboardBuilder {
     private dao: WKODbAccess;
     private username: string;
@@ -156,16 +157,54 @@ export default class OsDashboardBuilder {
         })
     }
     public buildDashboard() {
-        return this.getOsFamilies().then(families => {
-            //return families;
-            const familyBuilds = families.map(family => { return this.buildFamily(family)});
+        if (this.buildingForReviewer) {
+            return this.getOsFamilies().then(families => {
+                const familyBuilds = families.map((family: any) => { return this.buildFamily(family)});
+                return Promise.all(familyBuilds).then(osFamilies => {
+                    return osFamilies;
+                }).catch( err => { return err})
+            })
+        } else {
+            const dashRes: DashBoardData = {
+                _id: '',
+                name: '',
+                roles: [],
+                created: '',
+                updated: '',
+                forms: [],
+                hash: '',
+                homePageData: [],
+                user: null,
+                visitsCreatedOffline: [],
+                updatedFamilies: [],
+                families: []
+            };
+            const dashComponentPromises: any[] = [];
+            dashComponentPromises.push(this.dao.users().find(this.username));
+            dashComponentPromises.push(this.getOsFamilies());
+            dashComponentPromises.push(this.dao.forms().findAll({include_docs: true}).then(res => {
+                return res.rows.map((row: any) => {return row.doc});
+            }))
+            return Promise.all(dashComponentPromises).then(([user, families, forms]) => {
+                dashRes.user = user;
+                dashRes.hash = user.apipassword;
+                dashRes.roles = user.roles;
+                dashRes.families = families;
+                dashRes.forms = forms;
+                dashRes.created = moment().format();
+                dashRes.updated = moment().format();
+                dashRes._id = user._id
+                dashRes.name = user.name;
+                const familyBuilds = families.map((family: any) => { return this.buildFamily(family)});
+                return Promise.all(familyBuilds).then(osFamilies => {
+                    dashRes.homePageData = osFamilies;
+                    return dashRes;
+                }).catch( err => { return err})
+            }).catch(err => {
+                throw err;
+            })
+        }
 
-            return Promise.all(familyBuilds).then(osFamilies => {
-                return osFamilies;
-            }).catch( err => { return err})
-        }).catch(err => {
-            throw err;
-        })
     }
 
     sortFormsForOS(forms: any) {

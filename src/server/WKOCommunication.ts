@@ -11,6 +11,7 @@ export enum CommEvent {
     PERMISSION_RELEASE = "release-edited-visit-hold",
     BLOCK_EDITING = "block-visit-editing",
     SYNCH = "synch-completed-work"
+
 }
 
 export interface IWKOMessage {
