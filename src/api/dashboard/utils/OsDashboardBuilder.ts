@@ -278,9 +278,13 @@ export default class OsDashboardBuilder {
                     .forms()
                     .findAll({ include_docs: true })
                     .then(res => {
-                        return res.rows.map((row: any) => {
-                            return row.doc;
-                        });
+                        return res.rows
+                            .filter((row: any) => {
+                                return row.doc._id.startsWith('54blankForm');
+                            })
+                            .map((row: any) => {
+                                return row.doc;
+                            });
                     })
             );
             return Promise.all(dashComponentPromises)
