@@ -9,6 +9,7 @@ import {
     IVisit,
 } from '../data/Repository';
 import moment from 'moment';
+import { json } from 'body-parser';
 
 export default class FormUtil {
     public static indexQuestionGroup(
@@ -362,6 +363,9 @@ export default class FormUtil {
 
         for (const question of compressedForm.form.contents) {
             const index = this.indexQuestionGroup(formCopy.form, question.key);
+            if (!index) {
+                return JSON.parse(JSON.stringify(compressedForm));
+            }
             const formPart = this.findFormPartByIndex(formCopy.form, index);
             if (question.key === 'Income') {
                 const income = question.value.split(' ');
