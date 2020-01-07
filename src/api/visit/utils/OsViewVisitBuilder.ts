@@ -155,6 +155,7 @@ export default class OsViewVisitBuilder {
             this.archivedVisitsOfCurrentType(),
         ])
             .then(([activeVisits, archivedVisits]) => {
+                console.log(activeVisits);
                 return activeVisits.concat(archivedVisits);
             })
             .catch(err => {
