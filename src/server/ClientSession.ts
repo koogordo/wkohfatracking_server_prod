@@ -610,6 +610,9 @@ export class ClientSession {
                             if (updateOk) {
                                 return this.updateOfflineDashData(request)
                                     .then(updatedData => {
+                                        console.log(
+                                            'SOCKET IS ABOUT TO EMIT SYNCH DATA'
+                                        );
                                         this.socket.emit(CommEvent.SYNCH, {
                                             data: updatedData,
                                             role: request.role,

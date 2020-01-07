@@ -1,16 +1,16 @@
-import express from "express";
-import * as socketIo from "socket.io";
-import bodyParser from "body-parser";
-import { createServer, Server } from "http";
-import { WKOSocket } from "./WKOSocket";
-import { ClientSession } from "./ClientSession";
-import { IdbConfig } from "../data/Database";
-import cors from "cors";
-import DashboardController from "../api/dashboard/DashboardController";
-import AuthController from "../api/authentication/AuthController";
-import UserController from "../api/user/UserController"
-import VisitController from "../api/visit/VisitController";
-import ArchiveController from "../api/archive/ArichiveController"
+import express from 'express';
+import * as socketIo from 'socket.io';
+import bodyParser from 'body-parser';
+import { createServer, Server } from 'http';
+import { WKOSocket } from './WKOSocket';
+import { ClientSession } from './ClientSession';
+import { IdbConfig } from '../data/Database';
+import cors from 'cors';
+import DashboardController from '../api/dashboard/DashboardController';
+import AuthController from '../api/authentication/AuthController';
+import UserController from '../api/user/UserController';
+import VisitController from '../api/visit/VisitController';
+import ArchiveController from '../api/archive/ArichiveController';
 export class WKOServer {
     private server!: Server;
     private app!: express.Application;
@@ -47,18 +47,18 @@ export class WKOServer {
     }
     private middleWare() {
         // this.app.use(cors());
-        this.app.enable("trust proxy");
+        this.app.enable('trust proxy');
 
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(cors());
     }
     private apiRouting() {
-        this.app.use("/dashboard", DashboardController);
-        this.app.use("/auth", AuthController);
-        this.app.use("/user", UserController);
-        this.app.use("/visit", VisitController);
-        this.app.use("/archive", ArchiveController);
+        this.app.use('/dashboard', DashboardController);
+        this.app.use('/auth', AuthController);
+        this.app.use('/user', UserController);
+        this.app.use('/visit', VisitController);
+        this.app.use('/archive', ArchiveController);
     }
 }
 
