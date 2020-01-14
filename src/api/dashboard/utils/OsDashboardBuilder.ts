@@ -39,30 +39,41 @@ export default class OsDashboardBuilder {
     }
 
     getOsFamilies() {
-        return this.getOsFamilyIDs()
-            .then((osClientsDoc: IOsClients) => {
-                return Promise.all(
-                    osClientsDoc.clients.map(id => {
-                        return this.dao
-                            .families()
-                            .find(id.familyID)
-                            .then(fam => {
-                                return fam;
-                            })
-                            .catch(err => {
-                                throw err;
-                            });
-                    })
-                )
-                    .then(families => {
-                        return families;
-                    })
-                    .catch(err => {
-                        throw err;
-                    });
+        // return this.getOsFamilyIDs()
+        //     .then((osClientsDoc: IOsClients) => {
+        //         return Promise.all(
+        //             osClientsDoc.clients.map(id => {
+        //                 return this.dao
+        //                     .families()
+        //                     .find(id.familyID)
+        //                     .then(fam => {
+        //                         return fam;
+        //                     })
+        //                     .catch(err => {
+        //                         throw err;
+        //                     });
+        //             })
+        //         )
+        //             .then(families => {
+        //                 return families;
+        //             })
+        //             .catch(err => {
+        //                 throw err;
+        //             });
+        //     })
+        //     .catch(err => {
+        //         throw err;
+        //     });
+        return this.dao
+            .families()
+            .query('usersViews/assignedOs', {
+                include_docs: true,
+                key: this.userDBName,
             })
-            .catch(err => {
-                throw err;
+            .then(payload => {
+                return payload.rows.map((row: any) => {
+                    return row.doc;
+                });
             });
     }
     getClientForms(clientID: any) {
