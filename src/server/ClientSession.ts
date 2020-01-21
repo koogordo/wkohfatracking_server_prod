@@ -619,6 +619,7 @@ export class ClientSession {
                                         } as IWKOSynchTask);
                                     })
                                     .catch((err: any) => {
+                                        console.log(err);
                                         return err;
                                     });
                             }
