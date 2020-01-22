@@ -172,8 +172,10 @@ export default class OsViewVisitBuilder {
                     .archive()
                     .query('archiveFormsDesign/byClientAndName', {
                         include_docs: true,
-                        key: [this.clientID, currentVisitName],
+                        startkey: [this.clientID, currentVisitName, '99999999'],
+                        endkey: [this.clientID, currentVisitName, '00000'],
                         limit: 10,
+                        descending: true,
                     })
                     .then(payload => {
                         const visitDocs = payload.rows
