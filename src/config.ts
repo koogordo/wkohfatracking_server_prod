@@ -8,9 +8,9 @@ export const AppConfig: IAppConfig = {
 };
 export const DbConfig: IdbConfig = {
     domain: 'https://admin:wK0mI55ghBU9pp@www.hfatracking.net/couchdb', // prod
-    // domain: 'http://admin:GBP%40ck3rs%231@localhost:5984', // dev
+    // domain: 'http://admin:admin@localhost:5984', // dev
     password: 'wK0mI55ghBU9pp', // prod
-    // password: 'GBP%40ck3rs%231', // dev
+    // password: 'admin', // dev
     username: 'admin', // dev prod,
 };
 export const jwtSecret =

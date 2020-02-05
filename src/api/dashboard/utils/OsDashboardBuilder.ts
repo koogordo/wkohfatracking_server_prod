@@ -74,6 +74,9 @@ export default class OsDashboardBuilder {
                 return payload.rows.map((row: any) => {
                     return row.doc;
                 });
+            })
+            .catch(err => {
+                console.log(err);
             });
     }
     getClientForms(clientID: any) {
@@ -296,6 +299,9 @@ export default class OsDashboardBuilder {
                             .map((row: any) => {
                                 return row.doc;
                             });
+                    })
+                    .catch(err => {
+                        console.log(err);
                     })
             );
             return Promise.all(dashComponentPromises)
