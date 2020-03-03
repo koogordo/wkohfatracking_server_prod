@@ -341,7 +341,7 @@ export default class OsDashboardBuilder {
             queued: 3,
             'reviewer pool': 2,
             'under review': 2,
-            submitted: 1,
+            submitted: 2,
         };
         const actForms = forms.filter((form: any) => {
             return (
@@ -361,7 +361,7 @@ export default class OsDashboardBuilder {
             return (
                 statuses[
                     form.form.status[form.form.status.length - 1]['value']
-                ] >= 2
+                ] === 2
             );
         });
 
@@ -376,10 +376,10 @@ export default class OsDashboardBuilder {
             open: 0,
             'action required': 1,
             permanent: 3,
-            queued: 2,
+            queued: 3,
             'reviewer pool': 2,
             'under review': 2,
-            submitted: 1,
+            submitted: 2,
         };
         const transForms = forms.filter((form: any) => {
             return (
@@ -399,7 +399,9 @@ export default class OsDashboardBuilder {
             return (
                 statuses[
                     form.form.status[form.form.status.length - 1]['value']
-                ] === 3
+                ] === 3 &&
+                form.form.status[form.form.status.length - 1]['value'] !==
+                    'permanent'
             );
         });
         return {
