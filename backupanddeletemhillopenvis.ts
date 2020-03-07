@@ -19,7 +19,5 @@ dao.visits('os-mhill')
 
         dao.visits('os-mhill')
             .createAll(deletDocs)
-            .then(backRes => {
-                console.log(backRes);
-            });
+            .then(backRes => {});
     });

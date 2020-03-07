@@ -7,10 +7,10 @@ export const AppConfig: IAppConfig = {
     port: 3000,
 };
 export const DbConfig: IdbConfig = {
-    // domain: 'https://admin:wK0mI55ghBU9pp@www.hfatracking.net/couchdb', // prod
-    domain: 'http://admin:admin@localhost:5984', // dev
-    // password: 'wK0mI55ghBU9pp', // prod
-    password: 'admin', // dev
+    domain: 'https://admin:wK0mI55ghBU9pp@www.hfatracking.net/couchdb', // prod
+    // domain: 'http://admin:admin@localhost:5984', // dev
+    password: 'wK0mI55ghBU9pp', // prod
+    // password: 'admin', // dev
     username: 'admin', // dev prod,
 };
 export const jwtSecret =
