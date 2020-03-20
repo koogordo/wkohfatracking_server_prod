@@ -80,14 +80,11 @@ export default class OsDashboardBuilder {
             });
     }
     getClientForms(clientID: any) {
-        clientID = clientID.slice(0, clientID.length - 3);
         return this.dao
             .visits(this.userDBName)
-            .findAll({
+            .query('index/dashboard', {
                 include_docs: true,
-                startkey: clientID + '\uffff',
-                endkey: clientID,
-                descending: true,
+                key: clientID,
             })
             .then(res => {
                 const forms = res.rows.map((row: any) => {
