@@ -145,20 +145,50 @@ export default class OsViewVisitBuilder {
             });
     }
     public getPreviousVisits() {
-        // return Promise.all([this.combineOsVisitsOfCurrentType(), this.archivedVisitsOfCurrentType()]).then(([activeVisits, archivedVisits]) => {
-        //     return activeVisits.concat(archivedVisits);
-        // }).catch(err => {
-        //     return err;
-        // });
         return Promise.all([
-            this.combineOsVisitsOfCurrentType(),
-            this.archivedVisitsOfCurrentType(),
+            this.currentVisitName(),
+            this.currentVisitTemplate(),
         ])
-            .then(([activeVisits, archivedVisits]) => {
-                return activeVisits.concat(archivedVisits);
+            .then(([currentVisitName, currentVisitTemplate]) => {
+                return this.dao
+                    .visits(this.userDBName)
+                    .query('index/byClientIDVisitType', {
+                        include_docs: true,
+                        key: [this.clientID, currentVisitName],
+                        limit: 10,
+                        descending: true,
+                    })
+                    .then(payload => {
+                        const visitDocs = payload.rows
+                            .filter((row: any) => {
+                                return row.doc._id !== this.formID;
+                            })
+                            .map((row: any) => {
+                                return row.doc;
+                            });
+                        const orderedForms = FormUtil.orderFormsByDate(
+                            visitDocs
+                        );
+
+                        const result = orderedForms.map(doc => {
+                            if (FormUtil.isCompressed(doc)) {
+                                return FormUtil.expand(
+                                    currentVisitTemplate,
+                                    doc
+                                );
+                            } else {
+                                return doc;
+                            }
+                        });
+
+                        return result;
+                    })
+                    .catch(err => {
+                        throw err;
+                    });
             })
             .catch(err => {
-                return err;
+                throw err;
             });
     }
     public archivedVisitsOfCurrentType() {
