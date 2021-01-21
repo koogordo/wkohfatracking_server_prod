@@ -32,7 +32,7 @@
     "pouchdb": "^7.1.1",
     "pouchdb-collate": "^7.1.1",
     "rxjs": "^6.5.2",
-    "socket.io": "^2.2.0",
+    "socket.io": "^2.4.0",
     "uws": "^100.0.1"
   },
   "devDependencies": {
